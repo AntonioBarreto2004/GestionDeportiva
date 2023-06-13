@@ -1,0 +1,15 @@
+{% if messages %}
+{% for message in messages %}
+<script>
+    Swal.fire({
+        title: "{{ message }}",
+        icon: "{{ message.tags }}",
+        showConfirmButton: false,
+        timer: 1550,
+        
+    });
+</script>
+
+
+{% endfor%}
+{% endif %}

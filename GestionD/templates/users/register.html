@@ -1,0 +1,183 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<title>SigDEP - Registro </title>
+<link rel="stylesheet" href="{% static 'css/registrerusu.css' %}">
+
+<div class="container shadow p-3 mb-5 bg-body-tertiary rounded justify-content-center">
+    <h2>
+        <p>Registro <strong>Sig</strong>DEP</p>
+    </h2><br>
+    <div class="text">
+        <form method="post" id="RegistroUsu" enctype="multipart/form-data" class="needs-validation">
+            {% csrf_token %}
+            <div class="row ">
+                <div class="col-5 ">
+                    <label for="imgenP" class="textv">Foto de Perfil</label>
+                    <input class="form-control" type="file" id="imgenP" name="Imagen_del_usuario" accept="image/*"
+                        onchange="mostrarVistaPrevia(this)">
+                    <div id="imagen-preview" style="display: none;">
+                        <img id="imagen-preview-img" alt="Vista previa de la imagen" style="max-width: 20%;">
+                    </div>
+                    <p class="form-text">Solo formatos Jpeg, png</p>
+                </div>
+                <div class="col-5  " id="grupo__nombre">
+                    <label for="Nombre" class="form-label">Nombre</label>
+                    <div class="form__input">
+                        <input type="text" class="form-control" id="Nombre" name="nombre_persona">
+                        <i class="validacion-estado fa-solid fa-circle-xmark"></i>
+                    </div>
+                    <p class="formulario__input-Error">Ingrese su nombre sin caracteres especiales ni numeros</p>
+                    <span></span>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-5" id="grupo__apellido">
+                    <label for="Apellidos" class="form-label">Apellido</label>
+                    <span></span>
+                    <div class="form__input">
+                        <input type="text" class="form-control" id="Apellidos" name="apellido_persona">
+                        <i class="validacion-estado fa-solid fa-circle-xmark"></i>
+                    </div>
+                    <p class="formulario__input-Error">Ingrese su apellido sin caracteres especiales ni numeros</p>
+                </div>
+                <div class="col-5" id="grupo__select">
+                    <label for="tipoDocumento" class="form-label">Tipo de Documento</label>
+                    <div class="form__input">
+                        <select id="tipoDocumento" class="form-select" name="tiDocumento">
+                            <option value="">Seleccione</option> <!-- Opción por defecto -->
+                            {% for document_type in document_types %}
+                              {% if document_type.name == 'Seleccione' %}
+                                <option value="{{ document_type.id }}" selected>{{ document_type.name }}</option>
+                              {% else %}
+                                <option value="{{ document_type.id }}">{{ document_type.name }}</option>
+                              {% endif %}
+                            {% endfor %}
+                          </select>
+                        <i class="validacion-estado fa-solid fa-circle-xmark"></i>
+                    </div>
+                    <p class="formulario__input-Error">Por favor seleccione su tipo de Documento</p>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-5" id="grupo__fecha">
+                    <label for="fechaNaci" class="form-label">Fecha de Nacimiento</label>
+                    <div class="form__input">
+                        <input type="date" class="form-control" id="Fecha_de_nacimiento" name="Fecha_de_nacimiento">
+                        <i class="validacion-estado fa-solid fa-circle-xmark"></i>
+                    </div>
+                    <p class="formulario__input-Error">Por favor indique su fecha de Nacimiento</p>
+                </div>
+                <div class="col-5" id="grupo__documento">
+                    <label for="numDocumento" class="form-label">Numero Documento</label>
+                    <div class="form__input">
+                        <input type="number" class="form-control" id="numDocumento" name="num_documento">
+                        <i class="validacion-estado fa-solid fa-circle-xmark"></i>
+                    </div>
+                    <p class="formulario__input-Error">El Numero de documento tiene que ser solo de 10 Digitos o menos
+                        si es el caso</p>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-5" id="grupo__telefono">
+                    <label for="NumTelefono" class="form-label">Numero de Telefono</label>
+                    <div class="form__input">
+                        <input type="number" class="form-control" id="NumTelefono" name="Telefono">
+                        <i class="validacion-estado fa-solid fa-circle-xmark"></i>
+                    </div>
+                    <p class="formulario__input-Error">El telefono tiene que ser solo de 10 Digitos</p>
+                </div>
+                <div class="col-5" id="grupo__genero">
+                    <label for="Genero" class="form-label">Genero</label>
+                    <div class="form__input">
+                        <select id="Genero" class="form-select" name="genero">
+                            <option value="">Seleccione</option>
+                            <option value="M">Masculino</option>
+                            <option value="F">Femenino</option>
+                            <option value="P">Prefiero no decir</option>
+                        </select>
+                        <i class="validacion-estado fa-solid fa-circle-xmark"></i>
+                    </div>
+                    <p class="formulario__input-Error">Por favor seleccione su genero</p>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-5" id="grupo__email">
+                    <label for="email" class="form-label">Correo Electronico</label>
+                    <div class="form__input">
+                        <input type="email" class="form-control" id="email" name="CorreoE">
+                        <i class="validacion-estado fa-solid fa-circle-xmark"></i>
+                    </div>
+                    <p class="formulario__input-Error">Por favor ingresar un correo electronico valido
+                        "example@gmail.com"</p>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-5">
+                    <label for="floatingTextarea" class="textv">Alergias</label>
+                    <textarea class="form-control" placeholder="Si no tiene alergias poner no" id="floatAlergias"
+                        name="Alergias" maxlength="250"></textarea>
+                    <p class="form-text" id="contador-caracteres">Caracteres restantes: 250</p>
+                </div>
+                <div class="col-5">
+                    <label for="floatingTextarea" class="textv">Discapacidad</label>
+                    <textarea class="form-control" placeholder="Si no tiene alguna discapacidad poner no"
+                        id="floatDiscapacidad" name="Dicapacidad" maxlength="250"></textarea>
+                    <p class="form-text" id="contador-caracteres2">Caracteres restantes: 250</p>
+                </div>
+            </div>
+
+            <div class="col-5 badge  text-wrap" style="width: 80%; font-size: 15px; color: #0E6655;">
+                Para completar el registro en el sistema SIGDEP, es imprescindible proporcionar evidencia del "visto
+                médico deportivo". El visto médico deportivo es un documento emitido por un médico especializado, en
+                cual se determina la condición física de una persona para participar en una actividad deportiva
+                específica. Además, se requiere adjuntar una fotocopia del carnet de vacunación COVID-19 (opcional)
+                y una fotocopia del documento de identidad. Estos documentos son esenciales para asegurar la
+                adecuación y veracidad de la información registrada en el sistema. Agradecemos su colaboración en
+                este proceso.
+            </div>
+            <div class="row">
+                <div class="col-5">
+                    <label for="Docconcentimiento" class="textv">Documentos de consentimiento:</label>
+                    
+                    <div class="link-container">
+                        <p class="form-text">Descargar el documento que necesite :</p>
+                        <a href="{% url 'ConsentimientoM' %}" class="link-style"><i class="fas fa-file-pdf text-red"></i> Permiso de consentimiento Padres de familia (Menor_de_Edad).pdf</a> <br>
+                        <a href="{% url 'CosentimientoMayores' %}" download class="link-style"><i class="fas fa-file-pdf text-red"></i> Consentimiento manejo de Datos (Mayores_de_edad).pdf</a>
+                    </div>
+                   
+                    
+                </div>
+
+                <div class="col-5">
+                    <label for="DocumentosPdf" class="textv">Documento Consentimiento:</label>
+                    <input type="file" class="form-control" name="archivos" id="archivos" multiple>
+                </div>
+
+            </div>
+            <div class="row">
+                <div class="col-5">
+                    <label for="DocumentosPdf" class="textv">Documento Visto Medico:</label>
+                    <input type="file" class="form-control" name="archivosv" id="archivos" multiple>
+                </div>
+                <div class="col-5">
+                    <label for="DocumentosPdf" class="textv">Documento Fotocopia Del Documento:</label>
+                    <input type="file" class="form-control" name="archivosf" id="archivos" multiple>
+                </div>
+
+            </div>
+
+            <div class="d-grid gap-2 d-md-block bt">
+                <button type="submit" class="btn btn-outline-primary mx-2" id="botonEnviar">Resgistrase</button>
+                <a href="{% url 'login' %}" class="btn btn-outline-danger">Cancelar</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+
+
+
+{% endblock %}

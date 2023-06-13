@@ -1,0 +1,78 @@
+
+<nav class="navbar navbar-expand-md navbar-dark bg-transparent">
+
+
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navb">
+        <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div class="collapse navbar-collapse" id="navb">
+        <ul class="navbar-nav ms-auto custom-navbar-align">
+            {% if user.is_authenticated %}
+            {% if user.is_staff %} <!-- Verificar si el usuario tiene el rol de administrador -->
+            <li class="nav-item">
+                <a href="{% url 'registerIn' %}" class="nav-link">
+                    <span class="fa-solid fa-user-plus"></span>
+                    Regristrar Instructor</a>
+            </li>
+            {% endif %}
+            <li class="nav-item">
+                <a href="#" class="nav-link">
+                    <span class="fa-solid fa-left-long"></span>
+                    Volver</a>
+            </li>
+            <li class="nav-item">
+                <a href="{% url 'logout' %}" class="nav-link">
+                    <span class="fa-solid fa-right-to-bracket"></span>
+                    Cerrar Sesión</a>
+            </li>
+            {% else %}
+            <li class="nav-item">
+                <a href="{% url 'index' %}" class="nav-link">
+                    <span class="fa-solid fa-house"></span>
+                    Inicio</a>
+            </li>
+            <li class="nav-item">
+                <a href="{% url 'index' %}" class="nav-link">
+                    Acerca de
+                    <span class="fa-solid fa-circle-exclamation"></span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{% url 'index' %}" class="nav-link">
+                    <span class="fa-solid fa-briefcase"></span>
+                    Portafolio</a>
+            </li>
+            <li class="nav-item">
+                <a href="{% url 'index' %}" class="nav-link">
+                    <span class="fa-solid fa-users"></span>
+                    Clientes</a>
+            </li>
+            <li class="nav-item">
+                <a href="{% url 'index' %}" class="nav-link">
+                    <span class="fa-solid fa-handshake-angle"></span>
+                    Servicios</a>
+            </li>
+            <li class="nav-item">
+                <a href="{% url 'login' %}" class="nav-link">
+                    <span class="fa-solid fa-user"></span>
+                    Ingresar</a>
+            </li>
+            {% endif %}
+        </ul>
+    </div>
+</nav>
+
+<style>
+    .custom-navbar-align {
+        margin-right: 5%;
+    }
+
+    .nav-link span {
+        transition: transform 0.3s ease;
+    }
+
+    .nav-link:hover span {
+        transform: translateY(5px);
+    }
+</style>
