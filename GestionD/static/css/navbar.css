@@ -1,0 +1,11 @@
+.custom-navbar-align {
+    margin-right: 5%;
+}
+
+.nav-link span {
+    transition: transform 0.3s ease;
+}
+
+.nav-link:hover span {
+    transform: translateY(5px);
+}

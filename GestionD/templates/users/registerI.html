@@ -1,16 +1,27 @@
 {% extends 'base.html' %}
 {% load static %}
-{%block style%}
-{%endblock%}
+
 {% block content %}
-<title>SigDEP - Registro Instructor</title>
+<title>SigDEP - Registro </title>
 <link rel="stylesheet" href="{% static 'css/registrerusu.css' %}">
+
 <div class="container shadow p-3 mb-5 bg-body-tertiary rounded justify-content-center">
-    <h2>Registro Instructor</h2><br>
+    <h2>
+        <p>Registro <strong>Instructores</strong></p>
+    </h2><br>
     <div class="text">
-        <form method="post" id="RegistroUsu" enctype="multipart/form-data">
+        <form method="post" id="RegistroUsu" enctype="multipart/form-data" class="needs-validation">
             {% csrf_token %}
             <div class="row ">
+                <div class="col-5 ">
+                    <label for="imgenP" class="textv">Foto de Perfil</label>
+                    <input class="form-control" type="file" id="imgenP" name="Imagen_del_usuario" accept="image/*"
+                        onchange="mostrarVistaPrevia(this)">
+                    <div id="imagen-preview" style="display: none;">
+                        <img id="imagen-preview-img" alt="Vista previa de la imagen" style="max-width: 20%;">
+                    </div>
+                    <p class="form-text">Solo formatos Jpeg, png</p>
+                </div>
                 <div class="col-5  " id="grupo__nombre">
                     <label for="Nombre" class="form-label">Nombre</label>
                     <div class="form__input">
@@ -20,6 +31,8 @@
                     <p class="formulario__input-Error">Ingrese su nombre sin caracteres especiales ni numeros</p>
                     <span></span>
                 </div>
+            </div>
+            <div class="row">
                 <div class="col-5" id="grupo__apellido">
                     <label for="Apellidos" class="form-label">Apellido</label>
                     <span></span>
@@ -29,33 +42,33 @@
                     </div>
                     <p class="formulario__input-Error">Ingrese su apellido sin caracteres especiales ni numeros</p>
                 </div>
-            </div>
-            <div class="row">
-                <div class="col-5 " id="grupo__usuario">
-                    <label for="nombreUsuario" class="form-label">Nombre Usuario</label>
-                    <div class="form__input">
-                        <input type="text" class="form-control" id="nombreUsuario" name="nombre_usuario">
-                        <i class="validacion-estado fa-solid fa-circle-xmark"></i>
-                    </div>
-                    <p class="formulario__input-Error">Ingrese un nombre de usuario sin espacios ni caracteres
-                        especiales</p>
-                </div>
                 <div class="col-5" id="grupo__select">
                     <label for="tipoDocumento" class="form-label">Tipo de Documento</label>
                     <div class="form__input">
                         <select id="tipoDocumento" class="form-select" name="tiDocumento">
-                            <option value="">Seleccione</option>
-                            <option value="CC">Cedula Ciudadania</option>
-                            <option value="TI">Tarjeta Identidad</option>
-                            <option value="CE">Cedula Extranjera</option>
-                        </select>
+                            <option value="">Seleccione</option> <!-- Opción por defecto -->
+                            {% for document_type in document_types %}
+                              {% if document_type.name == 'Seleccione' %}
+                                <option value="{{ document_type.id }}" selected>{{ document_type.name }}</option>
+                              {% else %}
+                                <option value="{{ document_type.id }}">{{ document_type.name }}</option>
+                              {% endif %}
+                            {% endfor %}
+                          </select>
                         <i class="validacion-estado fa-solid fa-circle-xmark"></i>
                     </div>
                     <p class="formulario__input-Error">Por favor seleccione su tipo de Documento</p>
                 </div>
             </div>
-
             <div class="row">
+                <div class="col-5" id="grupo__fecha">
+                    <label for="fechaNaci" class="form-label">Fecha de Nacimiento</label>
+                    <div class="form__input">
+                        <input type="date" class="form-control" id="Fecha_de_nacimiento" name="Fecha_de_nacimiento">
+                        <i class="validacion-estado fa-solid fa-circle-xmark"></i>
+                    </div>
+                    <p class="formulario__input-Error">Por favor indique su fecha de Nacimiento</p>
+                </div>
                 <div class="col-5" id="grupo__documento">
                     <label for="numDocumento" class="form-label">Numero Documento</label>
                     <div class="form__input">
@@ -64,14 +77,6 @@
                     </div>
                     <p class="formulario__input-Error">El Numero de documento tiene que ser solo de 10 Digitos o menos
                         si es el caso</p>
-                </div>
-                <div class="col-5" id="grupo__fecha">
-                    <label for="fechaNaci" class="form-label">Fecha de Nacimiento</label>
-                    <div class="form__input">
-                        <input type="date" class="form-control" id="fechaNaci" name="Fecha_de_nacimiento">
-                        <i class="validacion-estado fa-solid fa-circle-xmark"></i>
-                    </div>
-                    <p class="formulario__input-Error">Por favor indique su fecha de Nacimiento</p>
                 </div>
             </div>
             <div class="row">
@@ -97,6 +102,7 @@
                     <p class="formulario__input-Error">Por favor seleccione su genero</p>
                 </div>
             </div>
+
             <div class="row">
                 <div class="col-5" id="grupo__email">
                     <label for="email" class="form-label">Correo Electronico</label>
@@ -122,66 +128,47 @@
                     <p class="form-text" id="contador-caracteres2">Caracteres restantes: 250</p>
                 </div>
             </div>
+
+
             <div class="row">
                 <div class="col-5">
-                    <p class="form-text" id="contador-caracteres2">Marque las casillas si cumple:</p>
-                    <div class="form-check form-switch ">
-                        <input class="form-check-input cbc" type="checkbox" role="switch" id="VacunasC"
-                            name="vacunasCovid" value=True>
-                        <label class="form-check-label textv" for="VacunasC">Vacunas Covid</label>
-
+                    <label for="Docconcentimiento" class="textv">Documentos de consentimiento:</label>
+                    
+                    <div class="link-container">
+                        <p class="form-text">Descargar el documento que necesite :</p>
+                        <a href="{% url 'CosentimientoMayores' %}" download class="link-style"><i class="fas fa-file-pdf text-red"></i> Consentimiento manejo de Datos (Mayores_de_edad).pdf</a>
                     </div>
-
-                    <div class="form-check form-switch ">
-                        <input class="form-check-input cbc" type="checkbox" role="switch" id="EstadoM"
-                            name="estadoMedico" value=True>
-                        <label class="form-check-label textv" for="flexSwitchCheckChecked">Estado medico</label>
-                    </div>
+                   
+                    
                 </div>
+
                 <div class="col-5">
-                    <label for="imgenP" class="textv">Foto de Perfil</label>
-                    <input class="form-control" type="file" id="imgenP" name="Imagen_del_usuario" accept="image/*"
-                        onchange="mostrarVistaPrevia(this)">
-                    <div id="imagen-preview" style="display: none;">
-                        <img id="imagen-preview-img" alt="Vista previa de la imagen" style="max-width: 70%;">
-                    </div>
-                    <p class="form-text">Solo formatos Jpeg, png</p>
+                    <label for="DocumentosPdf" class="textv">Documento Consentimiento:</label>
+                    <input type="file" class="form-control" name="archivos" id="archivos" multiple>
                 </div>
+
             </div>
             <div class="row">
-                <div class="col-5" id="grupo__contraseña">
-                    <label for="password" class="form-label">Contraseña</label>
-                    <div class="form__input">
-                        <input type="password" class="form-control" id="password" placeholder="Digite su contraseña"
-                            name="contra">
-                        <i class="validacion-estado fa-solid fa-circle-xmark"></i>
-                    </div>
-                    <p class="formulario__input-Error">La contraseña debe tener al menos 8 caracteres, una mayuscula,
-                        una minuscula, al menos un número y al menos un caracter especial.</p>
+                <div class="col-5">
+                    <label for="DocumentosPdf" class="textv">Documento Visto Medico:</label>
+                    <input type="file" class="form-control" name="archivosv" id="archivos" multiple>
+                </div>
+                <div class="col-5">
+                    <label for="DocumentosPdf" class="textv">Documento Fotocopia Del Documento:</label>
+                    <input type="file" class="form-control" name="archivosf" id="archivos" multiple>
                 </div>
 
-                <div class="col-5" id="grupo__password">
-                    <label for="confirm_password" class="form-label">Confirmar contraseña</label>
-                    <div class="form__input">
-                        <input type="password" class="form-control" id="confirm_password" name="password"
-                            placeholder="Confirmar contraseña">
-                        <i class="validacion-estado fa-solid fa-circle-xmark"></i>
-                    </div>
-                    <p class="formulario__input-Error">Las contraseñas no coinciden. Por favor,
-                        verifíquelas e intente nuevamente.</p>
-                </div>
             </div>
-            <div class="formulario__mensaje" id="formulario__mensaje">
-                <p><i class="fa-solid fa-triangle-exclamation"></i> <b>Error: </b>Por favor rellene los campos del
-                    formulario</p> <br>
-            </div>
+
             <div class="d-grid gap-2 d-md-block bt">
-                <button type="submit" class="btn btn-outline-success mx-2" onclick="validarTexto()">Resgistrase</button>
-                <a href="{% url 'index' %}" class="btn btn-outline-danger">Cancelar</a>
-
+                <button type="submit" class="btn btn-outline-primary mx-2" id="botonEnviar">Resgistrase</button>
+                <a href="{% url 'login' %}" class="btn btn-outline-danger">Cancelar</a>
             </div>
-
         </form>
     </div>
 </div>
+
+
+
+
 {% endblock %}

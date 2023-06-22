@@ -47,7 +47,7 @@ const validarFormulario = (e) => {
 			break;
 
 		case "Fecha_de_nacimiento":
-			validarFecha(e.target);
+			validadorCampo(expresiones.fecha, e.target, 'fecha');
 			break;
 
 		case "tiDocumento":
@@ -62,55 +62,6 @@ const validarFormulario = (e) => {
 	}
 }
 
-const validarFecha = (input) => {
-	const fechaSeleccionada = new Date(input.value);
-	const fechaActual = new Date();
-  
-	fechaActual.setFullYear(fechaActual.getFullYear() - 17);
-  
-	if (fechaSeleccionada <= fechaActual) {
-	  const year = fechaSeleccionada.getFullYear();
-	  const fechaMinima = `${year - 17}-01-01`;
-	  const fechaMaxima = `${year}-12-31`;
-  
-	  document.getElementById('Fecha_de_nacimiento').setAttribute('min', fechaMinima);
-	  document.getElementById('Fecha_de_nacimiento').setAttribute('max', fechaMaxima);
-  
-	  document.getElementById(`grupo__fecha`).classList.remove('col-incorrecto');
-	  document.getElementById(`grupo__fecha`).classList.add('col-correcto');
-	  document.querySelector(`#grupo__fecha i`).classList.add('fa-check-circle');
-	  document.querySelector(`#grupo__fecha i`).classList.remove('fa-circle-xmark');
-	  document.querySelector(`#grupo__fecha .formulario__input-Error`).classList.remove('formulario__input-Error-activo');
-	  campos['fecha'] = true;
-  
-	  const diferenciaAnios = fechaActual.getFullYear() - fechaSeleccionada.getFullYear();
-	  if (diferenciaAnios < 17) {
-		document.getElementById('Fecha_de_nacimiento').setAttribute('disabled', 'disabled');
-	  } else {
-		document.getElementById('Fecha_de_nacimiento').removeAttribute('disabled');
-	  }
-  
-	  const anioActual = fechaActual.getFullYear();
-	  const opcionesAnio = document.getElementById('Fecha_de_nacimiento').getElementsByTagName('option');
-  
-	  for (let i = 0; i < opcionesAnio.length; i++) {
-		const anio = parseInt(opcionesAnio[i].value);
-		if (anio > anioActual) {
-		  opcionesAnio[i].style.display = 'none';
-		} else {
-		  opcionesAnio[i].style.display = 'block';
-		}
-	  }
-	} else {
-	  document.getElementById(`grupo__fecha`).classList.add('col-incorrecto');
-	  document.getElementById(`grupo__fecha`).classList.remove('col-correcto');
-	  document.querySelector(`#grupo__fecha i`).classList.add('fa-circle-xmark');
-	  document.querySelector(`#grupo__fecha i`).classList.remove('fa-check-circle');
-	  document.querySelector(`#grupo__fecha .formulario__input-Error`).classList.add('formulario__input-Error-activo');
-	  campos['fecha'] = false;
-	}
-  };
-  
 const validadorCampo = (expresion, input, campo) => {
 	if (campo === 'select' || campo === 'genero') {
 		if (input.value !== '') {

@@ -1,6 +1,4 @@
-
-<nav class="navbar navbar-expand-md navbar-dark bg-transparent">
-
+<nav class="navbar navbar-expand-md navbar-transparent bg-transparent">
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navb">
         <span class="navbar-toggler-icon"></span>
@@ -17,7 +15,7 @@
             </li>
             {% endif %}
             <li class="nav-item">
-                <a href="#" class="nav-link">
+                <a href="{% url 'index' %}" class="nav-link">
                     <span class="fa-solid fa-left-long"></span>
                     Volver</a>
             </li>
@@ -33,23 +31,23 @@
                     Inicio</a>
             </li>
             <li class="nav-item">
-                <a href="{% url 'index' %}" class="nav-link">
+                <a href="#" class="nav-link">
                     Acerca de
                     <span class="fa-solid fa-circle-exclamation"></span>
                 </a>
             </li>
             <li class="nav-item">
-                <a href="{% url 'index' %}" class="nav-link">
+                <a href="#" class="nav-link">
                     <span class="fa-solid fa-briefcase"></span>
                     Portafolio</a>
             </li>
             <li class="nav-item">
-                <a href="{% url 'index' %}" class="nav-link">
+                <a href="#" class="nav-link">
                     <span class="fa-solid fa-users"></span>
                     Clientes</a>
             </li>
             <li class="nav-item">
-                <a href="{% url 'index' %}" class="nav-link">
+                <a href="#" class="nav-link">
                     <span class="fa-solid fa-handshake-angle"></span>
                     Servicios</a>
             </li>
@@ -63,16 +61,4 @@
     </div>
 </nav>
 
-<style>
-    .custom-navbar-align {
-        margin-right: 5%;
-    }
 
-    .nav-link span {
-        transition: transform 0.3s ease;
-    }
-
-    .nav-link:hover span {
-        transform: translateY(5px);
-    }
-</style>

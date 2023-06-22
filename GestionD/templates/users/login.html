@@ -1,10 +1,20 @@
 {% extends 'base.html' %}
 {% load static %}
 {% block navbar %}
+<nav class="navbar navbar-expand-md navbar-transparent bg-transparent">
+  <ul class="navbar-nav ms-auto custom-navbar-align">
+      <li class="nav-item">
+          <a href="{% url 'index' %}" class="nav-link">
+              <span class="fa-solid fa-house"></span>
+              Inicio</a>
+      </li>
+  </ul>
+</nav>
 {% endblock %}
 {% block content %}
 <title>SigDEP - Login</title>
 <link rel="stylesheet" href="{% static 'css/login.css' %}">
+<link rel="stylesheet" href="{% static 'css/navbar.css' %}">
 <div class="center shadow p-3 mb-5 bg-body-tertiary rounded">
   <h2>
     <p><strong>Sig</strong>DEP</p>

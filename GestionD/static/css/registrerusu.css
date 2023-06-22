@@ -2,7 +2,7 @@ body {
     margin: 0;
     padding: 0;
     font-family: montserrat;
-    background: linear-gradient(350deg, #ffffff, #2874A6);
+
     height: 100vh;
     overflow: hidden;
     overflow-y: auto;
@@ -171,6 +171,3 @@ h2 {
     /* Agrega aquí más propiedades de estilo según tus preferencias */
 }
 
-/* Media Queries para diferentes tamaños de pantalla */
-
-    /* Pantallas pequeñas */
