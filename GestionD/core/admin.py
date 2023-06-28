@@ -1,6 +1,7 @@
 from django.contrib import admin
 from .models import *
 
+admin.site.register(User)
 
 @admin.register(DocumentType)
 class DocumentTypeAdmin(admin.ModelAdmin):
@@ -20,5 +21,8 @@ class UserAdmin(admin.ModelAdmin):
   search_fields = ['num_document']
   list_filter = ['date_create']
   list_per_page = 5
+
+
+
 
   

@@ -1,4 +1,5 @@
 from django.db import models
+from django.conf import settings
 from core.models import *
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.contrib.auth.models import User
@@ -34,7 +35,7 @@ class Team(models.Model):
     team_name = models.CharField(max_length=40, verbose_name='Nombre de equipo')
     team_category = models.ForeignKey(Category, on_delete=models.CASCADE, verbose_name='Categoría')
     team_image = models.ImageField(upload_to='media/', blank=False, verbose_name='Foto del Equipo')
-    team_user = models.ManyToManyField(User, verbose_name='Instructor', limit_choices_to={'profile__cod_rol__name_rol': 'Instructor'})
+    team_user = models.ManyToManyField(settings.AUTH_USER_MODEL, verbose_name='Instructor', limit_choices_to={'profile__cod_rol__name_rol': 'Instructor'})
 
     def __str__(self):
         return self.team_name
@@ -46,7 +47,7 @@ class Team(models.Model):
 
 
 class Athlete(models.Model):
-    at_user = models.ManyToManyField(User, verbose_name='Atleta', limit_choices_to={'profile__cod_rol__name_rol': 'Atleta'})
+    at_user = models.ManyToManyField(settings.AUTH_USER_MODEL, verbose_name='Atleta', limit_choices_to={'profile__cod_rol__name_rol': 'Atleta'})
     dorsal = models.IntegerField(
         validators=[
             MinValueValidator(1),
