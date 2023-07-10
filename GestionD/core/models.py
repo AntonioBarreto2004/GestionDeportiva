@@ -1,4 +1,5 @@
 from django.db import models
+from django.core.exceptions import ValidationError
 from django.contrib.auth.models import User
 from django.core.validators import *
 from django import forms
@@ -38,6 +39,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     USERNAME_FIELD = 'email'
 
 
+
 class DocumentType(models.Model):
     name = models.CharField(max_length=30, verbose_name="Nombre")
 
@@ -64,6 +66,7 @@ class Rol(models.Model):
         db_table = 'rol'
         ordering = ['name_rol']
 
+
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, verbose_name='Usuario')
     photo_profile = models.ImageField(upload_to= 'media', verbose_name='Imagen del usuario', blank=False)
@@ -89,11 +92,23 @@ class Profile(models.Model):
     file_v = models.FileField(upload_to='media/', verbose_name='Documento Visto Medico')
     file_f = models.FileField(upload_to='media/', verbose_name='Documento Fotocopia Del Documento')
 
+    def clean(self):
+        # Validar que el número de documento sea único
+        if Profile.objects.filter(num_document=self.num_document).exclude(id=self.id).exists():
+            raise ValidationError('Ya existe un perfil con el mismo número de documento.')
+        
+        # Validar que el email del usuario sea único
+        if Profile.objects.filter(user__email=self.user.email).exclude(id=self.id).exists():
+            raise ValidationError('Ya existe un perfil con el mismo correo electrónico.')
+
     def Imagen_del_usuario(self):
-        return format_html('<img src={} width="100" /> ', self.photo_profile.url)
+        if self.photo_profile:
+            return format_html('<img src="{}" width="100" />', self.photo_profile.url)
+        else:
+            return ''
 
     def __str__(self):
-        return self.user.get_full_name()
+        return self.user.email
     
     class Meta:
         verbose_name = 'Usuario'
