@@ -47,7 +47,7 @@ def list_users(request):
 # Envío de correo al crear usuario
 def send_activation_email(user_name, user_email, password):
     subject = 'Bienvenido al Sistema SigDep'
-    html_message = render_to_string('staticfiles/html/email.html', { 'user_name': user_name,'user_email': user_email, 'password': password})
+    html_message = render_to_string('static/html/email.html', { 'user_name': user_name,'user_email': user_email, 'password': password})
     plain_message = strip_tags(html_message)
     from_email = settings.DEFAULT_FROM_EMAIL
     recipient_list = [user_email]

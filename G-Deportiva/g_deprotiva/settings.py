@@ -158,7 +158,7 @@ AUTH_USER_MODEL = 'Users.User'
 # settings.py
 
 RESET_PASSWORD_URL = 'http://127.0.0.1:8000/reset-confirm'
-DEFAULT_FROM_EMAIL = 'SigDep Gestión Deportiva <barreanto20198@gmail.com>'
+DEFAULT_FROM_EMAIL = 'SigDep Gestión Deportiva <sistemasigdep@gmail.com>'
 
 
 REST_FRAMEWORK = {
@@ -195,7 +195,7 @@ JWT_AUTH_COOKIE = None
 #Email Settings
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_HOST_USER = 'barreanto20198@gmail.com'
-EMAIL_HOST_PASSWORD = 'pzwnyxvruqespfrp'
+EMAIL_HOST_USER = 'sistemasigdep@gmail.com'
+EMAIL_HOST_PASSWORD = 'zknbfklbphowrscp'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True

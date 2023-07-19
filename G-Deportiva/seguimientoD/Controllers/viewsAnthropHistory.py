@@ -24,7 +24,7 @@ def list_anthro(request):
     weight = request.GET.get('weight')
     bmi = request.GET.get('bmi')
 
-    queryset = Anthropometric.objects.all()
+    queryset = AnthropometricHistory.objects.all()
 
     if athlete_id:
         queryset = queryset.filter(athlete_id=athlete_id)
@@ -79,14 +79,14 @@ def list_anthro(request):
     #METODO POST (AGREGAR)
 @api_view(['POST'])
 def create_anthro(request):
-    serializer_create = AnthropometricSerializer(data=request.data)
+    serializer_create = AnthropoHistorySerializer(data=request.data)
     serializer_create.is_valid(raise_exception=True)
     validated_data = serializer_create.validated_data
 
     athlete_id = validated_data['athlete_id']
     control_date = validated_data['atpt_controlDate']
 
-    if Anthropometric.objects.filter(athlete_id=athlete_id, atpt_controlDate=control_date).exists():
+    if AnthropometricHistory.objects.filter(athlete_id=athlete_id, atpt_controlDate=control_date).exists():
         return Response(
             data={'code': status.HTTP_409_CONFLICT, 'message': 'Ya existe un registro para esta fecha', 'status': False},
             status=status.HTTP_409_CONFLICT
@@ -108,21 +108,21 @@ changes_detected = []  # Variable para almacenar los cambios detectados
 @api_view(['PATCH'])
 def update_anthro(request, pk):
     try:
-        anthrop = Anthropometric.objects.get(pk=pk)
-    except Anthropometric.DoesNotExist:
+        anthrop = AnthropometricHistory.objects.get(pk=pk)
+    except AnthropometricHistory.DoesNotExist:
         return Response(data={'code': '404_NOT_FOUND', 
                               'message': 'Antropometría no encontrada.', 
                               'status': False}, 
                               status=status.HTTP_404_NOT_FOUND
                         )
     
-    serializer = AnthropometricSerializer(anthrop, data=request.data, partial=True)
+    serializer = AnthropoHistorySerializer(anthrop, data=request.data, partial=True)
     serializer.is_valid(raise_exception=True)
     serializer.save()
     
     response_data ={
         'code': status.HTTP_200_OK,
-        'message': 'Antropometría actualizada exitosamente',
+        'message': 'Datos actualizados exitosamente',
         'status': True
     }
     
@@ -132,8 +132,8 @@ def update_anthro(request, pk):
 @api_view(['DELETE'])
 def delete_anthro(request, pk):
     try:
-        anthrop = Anthropometric.objects.get(pk=pk)
-    except Anthropometric.DoesNotExist:
+        anthrop = AnthropometricHistory.objects.get(pk=pk)
+    except AnthropometricHistory.DoesNotExist:
         return Response(data={'code': status.HTTP_500_INTERNAL_SERVER_ERROR, 
                               'message': 'Datos no encontrada.', 
                               'status': False}, 

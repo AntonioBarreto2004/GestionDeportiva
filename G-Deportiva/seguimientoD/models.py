@@ -3,6 +3,8 @@ from django.conf import settings
 from Users.models import *
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.contrib.auth.models import User
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 
 
 class Category(models.Model):
@@ -17,6 +19,7 @@ class Category(models.Model):
         verbose_name = 'Categoría'
         verbose_name_plural = 'Categorías'
         db_table = 'category'
+        ordering = ['id']
 
 class Positions(models.Model):
     p_category = models.ForeignKey(Category, verbose_name="Deporte", on_delete=models.CASCADE)
@@ -30,6 +33,7 @@ class Positions(models.Model):
         verbose_name = 'Posición'
         verbose_name_plural = 'Posiciones'
         db_table = 'positions'
+        ordering = ['id']
 
 
 class Team(models.Model):
@@ -46,10 +50,11 @@ class Team(models.Model):
         verbose_name = 'Equipo'
         verbose_name_plural = 'Equipos'
         db_table = 'team'
+        ordering = ['id']
 
 
 class Athlete(models.Model):
-    at_user = models.ManyToManyField(settings.AUTH_USER_MODEL, verbose_name='Atleta')
+    at_user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE,verbose_name='Atleta')
     dorsal = models.IntegerField(
         validators=[
             MinValueValidator(1),
@@ -71,12 +76,13 @@ class Athlete(models.Model):
     class Meta:
        verbose_name = 'Atleta'
        verbose_name_plural = 'Atletas'
-       db_table = 'athlete' 
+       db_table = 'athlete'
+       ordering = ['id'] 
 
 
 class Anthropometric(models.Model):
     athlete_id = models.ForeignKey(Athlete, on_delete=models.CASCADE, verbose_name='Atleta')
-    atpt_controlDate = models.DateField(verbose_name='Fecha de Control')
+    atpt_controlDate = models.DateField(auto_now_add=True, verbose_name='Fecha de Control')
     atpt_arm = models.IntegerField(verbose_name='Brazo')
     atpt_chest = models.CharField(max_length=45, verbose_name='Pecho')
     atpt_hip = models.DecimalField(max_digits=10, decimal_places=0, verbose_name='Cadera')
@@ -90,8 +96,7 @@ class Anthropometric(models.Model):
     atpt_height = models.DecimalField(max_digits=10, decimal_places=0, verbose_name='Talla')
     atpt_weight = models.DecimalField(max_digits=10, decimal_places=0, verbose_name='Peso')
     atpt_bmi = models.DecimalField(max_digits=10, decimal_places=0, verbose_name='IMC')
-    atpt_created_date = models.DateField(auto_now_add=True, verbose_name='Fecha de Creación')
-    atpt_updated_date = models.DateField(auto_now=True, verbose_name='Fecha Actualización')
+    atpt_updated_date = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return str(self.athlete_id)
@@ -99,8 +104,43 @@ class Anthropometric(models.Model):
     class Meta:
         verbose_name = 'Antropométrica'
         verbose_name_plural = 'Antropométricas'
-        db_table = 'anthropometric' 
+        db_table = 'anthropometric'
+        ordering = ['id'] 
     
+
+class AnthropometricHistory(models.Model):
+    anthropometric = models.ForeignKey(Anthropometric, on_delete=models.CASCADE, verbose_name='Antropométrica')
+    atpt_controlDate = models.DateField(auto_now_add=True, verbose_name='Fecha de Control')
+    atpt_arm = models.IntegerField(verbose_name='Brazo')
+    atpt_chest = models.CharField(max_length=45, verbose_name='Pecho')
+    atpt_hip = models.DecimalField(max_digits=10, decimal_places=0, verbose_name='Cadera')
+    atpt_calf = models.DecimalField(max_digits=10, decimal_places=0, verbose_name='Gemelo')
+    atpt_humerus = models.DecimalField(max_digits=10, decimal_places=0, verbose_name='Húmero')
+    atpt_femur = models.DecimalField(max_digits=10, decimal_places=0, verbose_name='Fémur')
+    atpt_wrist = models.DecimalField(max_digits=10, decimal_places=0, verbose_name='Muñeca')
+    atpt_triceps = models.DecimalField(max_digits=10, decimal_places=0, verbose_name='Tríceps')
+    atpt_suprailiac = models.DecimalField(max_digits=10, decimal_places=0, verbose_name='Supraespinal')
+    atpt_pectoral = models.DecimalField(max_digits=10, decimal_places=0, verbose_name='Pectoral')
+    atpt_height = models.DecimalField(max_digits=10, decimal_places=0, verbose_name='Talla')
+    atpt_weight = models.DecimalField(max_digits=10, decimal_places=0, verbose_name='Peso')
+    atpt_bmi = models.DecimalField(max_digits=10, decimal_places=0, verbose_name='IMC')
+    atpt_updated_date = models.DateTimeField(auto_now=True)
+
+    
+@receiver(post_save, sender=Anthropometric)
+def create_anthropometric_history(sender, instance, created, **kwargs):
+    if created:
+        # Crea una instancia de AnthropometricHistory y guarda los datos relevantes
+        anthropometric_history = AnthropometricHistory.objects.create(
+            anthropometric=instance,
+            # Guarda los campos relevantes para comparar los cambios
+        )
+        anthropometric_history.save()
+    else:
+        # Actualiza los campos relevantes en la instancia de AnthropometricHistory existente
+        anthropometric_history = AnthropometricHistory.objects.get(anthropometric=instance)
+        # Actualiza los campos relevantes para comparar los cambios
+        anthropometric_history.save()
 
 
 

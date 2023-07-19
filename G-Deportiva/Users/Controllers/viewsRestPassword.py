@@ -63,6 +63,15 @@ def reset_password_confirm(request, uidb64, token):
 
     if user is not None and default_token_generator.check_token(user, token):
         new_password = request.data.get('new_password')
+        confirm_password = request.data.get('confirm_password')
+
+        if new_password != confirm_password:
+            return Response(
+                data={'code': 'HTTP_400_BAD_REQUEST', 
+                      'message': 'Las contraseñas no coinciden', 
+                      'status': False}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
 
         user.set_password(new_password)
