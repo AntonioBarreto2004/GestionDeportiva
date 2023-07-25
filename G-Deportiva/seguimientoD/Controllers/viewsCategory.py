@@ -24,17 +24,22 @@ def list_category(request):
     filtered_queryset = category_filter.qs
 
     if not filtered_queryset.exists():
-        return Response(
-            data={'code': status.HTTP_404_NOT_FOUND, 'message': 'No hay datos registrados', 'status': False},
-            status=status.HTTP_404_NOT_FOUND
-        )
+        respuesta = {
+            'code': status.HTTP_200_OK,
+            'status': False,
+            'message': 'No hay datos registrados',
+            'data': None
+        }
+        return Response(respuesta)
+    
     serializer = CategorySerializer(filtered_queryset, many=True)
     responde_data={
         'code': status.HTTP_200_OK,
         'message': 'Lista de Categorias exitosa',
         'status' : True,
+        'data': serializer.data
     }
-    return Response(data=(responde_data, serializer.data), status=status.HTTP_200_OK)
+    return Response(responde_data)
 
     
     #METODO POST (AGREGAR)
@@ -50,10 +55,12 @@ def create_category(request):
 
     # Validación adicional
     if Category.objects.filter(t_name=t_name).exists():
-        return Response(
-            data={'code': status.HTTP_409_CONFLICT, 'message': 'Los datos ya existen', 'status': False},
-            status=status.HTTP_409_CONFLICT
-        )
+        data={'code': status.HTTP_200_OK, 
+                  'status': False,
+                  'message': 'Los datos ya existen', 
+                  'data': None
+                  }
+        return Response(data)
 
     with transaction.atomic():
         try:
@@ -68,9 +75,10 @@ def create_category(request):
         response_data = {
             'code': status.HTTP_201_CREATED,
             'message': 'Categoría creada exitosamente',
-            'status': True
+            'status': True,
+            'data': None
         }
-        return Response(data=response_data, status=status.HTTP_201_CREATED)
+        return Response(data=response_data)
 
 @api_view(['PATCH'])
 def update_category(request, pk):
