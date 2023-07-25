@@ -32,7 +32,7 @@ def list_athlete(request):
             status=status.HTTP_404_NOT_FOUND
         )
     
-    serializer = AthleteSerializer(filtered_queryset, many=True)
+    serializer = CategorySerializer(filtered_queryset, many=True)
     
     responde_data={
         'code': status.HTTP_200_OK,
@@ -46,55 +46,67 @@ def list_athlete(request):
 @api_view(['POST'])
 def create_athlete(request):
     serializer = AthleteSerializer(data=request.data)
-    serializer.is_valid(raise_exception=True)
-        # Obtener el nombre del equipo de la solicitud
-    at_user = serializer.validated_data['at_user']
+    if serializer.is_valid(raise_exception=True):
+        # Obtener los datos validados del serializador
+        validated_data = serializer.validated_data
+         # Filtrar los usuarios por rol "Atleta"
+        athletes = User.objects.filter(cod_rol__name_rol='Atleta')
+        # Asignar los usuarios filtrados al campo at_user del atleta
+        validated_data['at_user'] = athletes
 
-    # Verificar si ya existe un equipo con el mismo nombre
-    if Athlete.objects.filter(at_user=at_user).exists():
+        # Obtener los valores de at_position y at_positiona del modelo Positions
+        at_position_data = validated_data.get('c_position', {})
+        at_positiona_data = validated_data.get('c_positiona', {})
+        at_position_value = at_position_data.get('at_position', '')
+        at_positiona_value = at_positiona_data.get('at_positiona', '')
+
+        # Asignar los valores de at_position y at_positiona al atleta
+        validated_data['at_position'] = at_position_value
+        validated_data['at_positiona'] = at_positiona_value
+
+        # Verificar si el usuario está autenticado
+        if not request.user.is_authenticated:
+            response_data = {
+                'code': status.HTTP_401_UNAUTHORIZED,
+                'message': 'Debes iniciar sesión para crear un equipo.',
+                'status': False
+            }
+            return Response(data=response_data, status=status.HTTP_401_UNAUTHORIZED)
+
+        # Verificar si el usuario existe y tiene el rol de "Instructor" o "Administrador"
+        user = request.user
+        try:
+            if not user.cod_rol.name_rol in ['Instructor', 'Administrador']:
+                response_data = {
+                    'code': status.HTTP_403_FORBIDDEN,
+                    'message': 'No tienes permisos para crear un equipo.',
+                    'status': False
+                }
+                return Response(data=response_data, status=status.HTTP_403_FORBIDDEN)
+        except User.DoesNotExist:
+            response_data = {
+                'code': status.HTTP_404_NOT_FOUND,
+                'message': 'El usuario no existe.',
+                'status': False
+            }
+            return Response(data=response_data, status=status.HTTP_404_NOT_FOUND)
+
+        # Guardar el atleta
+        serializer.save()
+
+        response_data = {
+                'code': status.HTTP_201_CREATED,
+                'message': 'Atleta registrado exitosamente',
+                'status': True,
+            }
+        return Response(data=(response_data), status=status.HTTP_201_CREATED)
+    else:
         response_data = {
             'code': status.HTTP_400_BAD_REQUEST,
-            'message': 'Ya existe un Atleta Registrado',
+            'message': 'Error al registrar el atleta',
             'status': False
         }
         return Response(data=response_data, status=status.HTTP_400_BAD_REQUEST)
-
-    # Verificar si el usuario está autenticado
-    if not request.user.is_authenticated:
-        response_data = {
-            'code': status.HTTP_401_UNAUTHORIZED,
-            'message': 'Debes iniciar sesión para crear un equipo.',
-            'status': False
-        }
-        return Response(data=response_data, status=status.HTTP_401_UNAUTHORIZED)
-
-    # Verificar si el usuario existe y tiene el rol de "Instructor" o "Administrador"
-    user = request.user
-    try:
-        if not user.cod_rol.name_rol in ['Instructor', 'Administrador']:
-            response_data = {
-                'code': status.HTTP_403_FORBIDDEN,
-                'message': 'No tienes permisos para crear un equipo.',
-                'status': False
-            }
-            return Response(data=response_data, status=status.HTTP_403_FORBIDDEN)
-    except User.DoesNotExist:
-        response_data = {
-            'code': status.HTTP_404_NOT_FOUND,
-            'message': 'El usuario no existe.',
-            'status': False
-        }
-        return Response(data=response_data, status=status.HTTP_404_NOT_FOUND)
-
-    # Guardar el atleta
-    serializer.save()
-
-    response_data = {
-            'code': status.HTTP_201_CREATED,
-            'message': 'Atleta registrado exitosamente',
-            'status': True,
-        }
-    return Response(data=(response_data), status=status.HTTP_201_CREATED)
     
 
 @api_view(['PATCH'])

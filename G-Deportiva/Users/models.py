@@ -35,7 +35,7 @@ class Rol(models.Model):
         verbose_name = 'Rol'
         verbose_name_plural = 'Roles'
         db_table = 'rol'
-        ordering = ['id']
+        ordering = ['name_rol']
 
 class gender(models.Model):
     name_gender = models.CharField(max_length=30, verbose_name="Genero")
@@ -124,5 +124,5 @@ class User(AbstractBaseUser, PermissionsMixin):
         verbose_name = 'Usuario'
         verbose_name_plural = 'Usuarios'
         db_table = 'user'
-        ordering = ['id']
+        ordering = ['date_create']
 

@@ -26,8 +26,8 @@ class AnthropometricSerializer(serializers.ModelSerializer):
     class Meta:
         model = Anthropometric
         fields = '__all__'
-
-class AnthropoHistorySerializer(serializers.ModelSerializer):
+        
+class SportsSerializer(serializers.ModelSerializer):
     class Meta:
-        model = AnthropometricHistory
+        model = Sports
         fields = '__all__'

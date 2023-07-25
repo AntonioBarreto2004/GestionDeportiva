@@ -5,7 +5,7 @@ from datetime import datetime
 from .models import *
 from .serializer import *
 
-#Actualizar fecha de cambios
+#Actualizar fecha de cambios en los datos del usuario.
 @receiver(pre_save, sender=Anthropometric)
 def profile_pre_save(sender, instance, **kwargs):
     if instance.pk:
@@ -28,5 +28,5 @@ def profile_pre_save(sender, instance, **kwargs):
             colombia_timezone = pytz.timezone('America/Bogota')
             # Obtener la fecha y hora actual en la zona horaria de Colombia
             current_time = datetime.now(colombia_timezone)
-            # Asignar la fecha y hora actual en la zona horaria de Colombia al campo atpt_updated_date
+            # Asignar la fecha y hora actual en la zona horaria de Colombia al campo modified_at
             instance.atpt_updated_date = current_time

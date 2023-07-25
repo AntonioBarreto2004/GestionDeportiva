@@ -1,12 +1,12 @@
 from django.urls import path
 
 from seguimientoD.Controllers import viewsAnthropometric
-from seguimientoD.Controllers import viewsAnthropHistory
 from seguimientoD.Controllers import viewsPositions
 from seguimientoD.Controllers import viewsCategory
 from seguimientoD.Controllers import viewsTeam
 from seguimientoD.Controllers import viewsAthlete
 from seguimientoD.Controllers import viewsCompareChanges
+from seguimientoD.Controllers import viewsSport
 
 
 urlpatterns = [
@@ -35,10 +35,8 @@ urlpatterns = [
     path('update-anthrop/<int:pk>/', viewsAnthropometric.update_anthro, name='Update Anthropometric'),
     path('dalete-anthrop/<int:pk>/', viewsAnthropometric.delete_anthro, name='Delete Anthropometric'),
 
-    path('list-anthrop-history/', viewsAnthropHistory.list_anthro, name='List Anthropometric'),
-    path('create-anthrop-history/', viewsAnthropHistory.create_anthro, name='Create Anthropometric'),
-    path('update-anthrop-history/<int:pk>/', viewsAnthropHistory.update_anthro, name='Update Anthropometric'),
-    path('dalete-anthrop-history/<int:pk>/', viewsAnthropHistory.delete_anthro, name='Delete Anthropometric'),
-
     path('compare-changes/', viewsCompareChanges.compare_changes, name='Compare Changes'),
+    path('sports/', viewsSport.list_sports, name='list_sports'),
+    path('sports-create/', viewsSport.create_sports, name='create_sports'),
+    path('sports/<int:pk>/', viewsSport.sports_detail, name='sports_detail'),
 ]

@@ -3,7 +3,6 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from ..serializer import *
 from ..models import *
-from .viewsCompareChanges import compare_changes
 
 #METODO GET (LISTAR)
 @api_view(['GET'])
@@ -79,31 +78,25 @@ def list_anthro(request):
     #METODO POST (AGREGAR)
 @api_view(['POST'])
 def create_anthro(request):
-    serializer_create = AnthropometricSerializer(data=request.data)
-    serializer_create.is_valid(raise_exception=True)
-    validated_data = serializer_create.validated_data
+        serializer_create = AnthropometricSerializer(data=request.data)
+        serializer_create.is_valid(raise_exception=True)
+        validate_data = serializer_create.validated_data
+        serializer_create.save()
 
-    athlete_id = validated_data['athlete_id']
-    control_date = validated_data['atpt_controlDate']
+        if Anthropometric.objects.filter(athlete_id=validate_data['athlete_id']):
+            return Response(
+                data={'code': status.HTTP_409_CONFLICT, 
+                      'message': 'Ya existe un atleta registrado', 
+                      'status': False},
+                    status=status.HTTP_409_CONFLICT
+            )
+        responde_data = {
+            'code': status.HTTP_201_CREATED, 
+            'message': 'Datos Registrados exitosamente!', 
+            'status': False
+        }
+        return Response(data=responde_data, status=status.HTTP_201_CREATED)
 
-    if Anthropometric.objects.filter(athlete_id=athlete_id, atpt_controlDate=control_date).exists():
-        return Response(
-            data={'code': status.HTTP_409_CONFLICT, 'message': 'Ya existe un registro para esta fecha', 'status': False},
-            status=status.HTTP_409_CONFLICT
-        )
-
-    serializer_create.save()
-
-    response_data = {
-        'code': status.HTTP_201_CREATED,
-        'message': 'Datos registrados exitosamente!',
-        'status': True
-    }
-    return Response(data=response_data, status=status.HTTP_201_CREATED)
-
-
-
-changes_detected = []  # Variable para almacenar los cambios detectados
     #METODO PATCH (ACTUALIZAR)
 @api_view(['PATCH'])
 def update_anthro(request, pk):
@@ -150,13 +143,5 @@ def delete_anthro(request, pk):
     }
     
     return Response(data=response_data, status=status.HTTP_204_NO_CONTENT)
-
-
-@api_view(['GET'])
-def get_changes(request):
-    # Lógica para obtener los cambios llamando a la función compare_changes en el archivo comparator.py
-    changes_detected = compare_changes()
-
-    return Response(changes_detected)
 
 

@@ -47,7 +47,7 @@ def list_users(request):
 # Envío de correo al crear usuario
 def send_activation_email(user_name, user_email, password):
     subject = 'Bienvenido al Sistema SigDep'
-    html_message = render_to_string('static/html/email.html', { 'user_name': user_name,'user_email': user_email, 'password': password})
+    html_message = render_to_string('static/html/correo.html', { 'user_name': user_name,'user_email': user_email, 'password': password})
     plain_message = strip_tags(html_message)
     from_email = settings.DEFAULT_FROM_EMAIL
     recipient_list = [user_email]
@@ -107,7 +107,9 @@ def update_user(request, pk):
         userU = User.objects.get(pk=pk)
     except User.DoesNotExist:
         return Response(
-            data={'code':'500_INTERNAL_SERVER_ERROR', 'message': 'Usuario no existe',  'status':False}, 
+            data={'code':'500_INTERNAL_SERVER_ERROR', 
+                  'message': 'Usuario no existe',  
+                  'status':False}, 
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
     

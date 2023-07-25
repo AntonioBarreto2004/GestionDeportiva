@@ -1,7 +1,7 @@
 from rest_framework.decorators import api_view
 from rest_framework import status
 from rest_framework.response import Response
-from ..models import *
+from ..models import Anthropometric, Athlete
 from datetime import datetime, timedelta
 
 @api_view(['GET'])
@@ -17,10 +17,10 @@ def compare_changes(request):
         )
 
         for record in user_records:
-            latest_update = AnthropometricHistory.objects.filter(
-                anthropometric__athlete_id=record.athlete_id,
-                atpt_controlDate__gte=three_months_ago
-            ).order_by('-atpt_controlDate').first()
+            latest_update = Anthropometric.objects.filter(
+                athlete_id=record.athlete_id,
+                atpt_created_date__gte=three_months_ago
+            ).order_by('-atpt_created_date').first()
 
             if latest_update:
                 relevant_fields = [
@@ -52,19 +52,20 @@ def compare_changes(request):
                         'changes': changes_detected_fields
                     })
 
+            response_data = {
+                'code': status.HTTP_200_OK,
+                'message': 'Cambios detectados después de tres meses',
+                'status': True,
+                'changes_detected': changes_detected,
+
+            }
+
     if changes_detected:
-        response_data = {
-            'code': status.HTTP_200_OK,
-            'message': 'Cambios detectados después de tres meses',
-            'status': True,
-            'changes_detected': changes_detected,
-        }
-        return Response(data=response_data, status=status.HTTP_200_OK)
+        return Response(data=(response_data), status=status.HTTP_200_OK)
     else:
-        response_data = {
+        responde_data = {
             'code': status.HTTP_404_NOT_FOUND,
             'message': 'No se detectaron cambios después de tres meses',
             'status': False,
         }
-        return Response(data=response_data, status=status.HTTP_404_NOT_FOUND)
-
+        return Response(data=(responde_data), status=status.HTTP_404_NOT_FOUND)
