@@ -1,3 +1,4 @@
+from datetime import datetime
 import jwt
 from django.conf import settings
 from rest_framework.permissions import IsAuthenticated
@@ -11,7 +12,7 @@ from rest_framework import status
 from django.db.models.signals import pre_save
 from django.dispatch import receiver
 import pytz
-from datetime import datetime
+from django.utils import timezone
 from .models import *
 from .serializers import *
 
@@ -73,10 +74,8 @@ def system_access(request):
     return Response({'message': 'Acceso permitido'})
 
 
-
-
-
 #Actualizar fecha de cambios en los datos del usuario.
+
 @receiver(pre_save, sender=User)
 def profile_pre_save(sender, instance, **kwargs):
     if instance.pk:
@@ -84,6 +83,7 @@ def profile_pre_save(sender, instance, **kwargs):
         if (
             original_instance.name != instance.name
             or original_instance.email != instance.email
+            or original_instance.cod_rol != instance.cod_rol
             or original_instance.last_name != instance.last_name
             or original_instance.photo_profile != instance.photo_profile
             or original_instance.birthdate != instance.birthdate

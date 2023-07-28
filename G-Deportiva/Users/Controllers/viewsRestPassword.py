@@ -1,4 +1,5 @@
 import base64
+import re
 from django.contrib.auth.tokens import default_token_generator
 from django.utils.encoding import force_bytes
 from django.core.mail import send_mail
@@ -19,10 +20,10 @@ def reset_password(request):
     user = User.objects.filter(email=email).first()
     if not user:
         return Response(
-            data={'code':'500_INTERNAL_SERVER_ERROR', 
-                  'message': 'Usuario no existe',  
-                  'status':False}, 
-                  status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            data={'code':status.HTTP_200_OK, 
+                  'message': 'correo no existente',  
+                  'status':False,
+                  'data': None}
                 )
 
     token = default_token_generator.make_token(user)
@@ -44,12 +45,11 @@ def reset_password(request):
     send_mail(subject, message, from_email, recipient_list)
 
     return Response(
-        data={'code': 'HTTP_200_OK', 
-              'message': 'Correo Enviado exitosamente', 
-              'status': True}, 
-              status=status.HTTP_200_OK
+        data={'code': status.HTTP_200_OK, 
+              'message': 'Enlace de restablecer contraseña Enviado exitosamente, por favor revise su Correo', 
+              'status': True,
+              'data': None}
             )
-
 
 
 
@@ -65,14 +65,27 @@ def reset_password_confirm(request, uidb64, token):
         new_password = request.data.get('new_password')
         confirm_password = request.data.get('confirm_password')
 
+        # Validación para verificar que las contraseñas coincidan
         if new_password != confirm_password:
             return Response(
-                data={'code': 'HTTP_400_BAD_REQUEST', 
+                data={'code': status.HTTP_200_OK, 
                       'message': 'Las contraseñas no coinciden', 
-                      'status': False}, 
-                status=status.HTTP_400_BAD_REQUEST
+                      'status': False,
+                      'data':None}
             )
-
+        
+        # Nueva validación para verificar los requisitos de la contraseña
+        if (len(new_password) < 8 or
+                not re.search(r'[A-Z]', new_password) or
+                not re.search(r'[a-z]', new_password) or
+                not re.search(r'[0-9]', new_password)):
+            return Response(
+                data={'code': status.HTTP_200_OK, 
+                      'status': False,
+                      'message': 'La contraseña debe tener más de 8 caracteres, contener al menos una letra mayúscula, una letra minúscula y un número.',
+                      'data': None 
+                      }
+            )
 
         user.set_password(new_password)
         user.save()

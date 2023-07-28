@@ -21,6 +21,11 @@ class GenderSerializer(serializers.ModelSerializer):
 
 
 class UserSerializer(serializers.ModelSerializer):
+    photo_profile = serializers.SerializerMethodField()
+    password = models.CharField(validators=[RegexValidator(r'^(?=.*\d)(?=.*[A-Z])(?=.*[a-z])(?!.*\s).*$',
+                                 "La contraseña debe contener al menos: 1 letra minúscula, 1 letra mayúscula, 1 número")])
+    num_document = models.CharField(validators=[RegexValidator(r'^\d{8,10}$', "El número de documento debe tener entre 8 y 10 dígitos.")])
+    phone_number = models.CharField(validators=[RegexValidator(r'^\d{10}$', "El número de teléfono debe tener exactamente 10 dígitos.")])
     email = serializers.EmailField(validators=[])
     groups = serializers.PrimaryKeyRelatedField(
         many=True,
@@ -68,6 +73,8 @@ class UserSerializer(serializers.ModelSerializer):
 
         return user
     
+    def get_photo_profile (self, obj):
+        return f"http://127.0.0.1:8000{obj.photo_profile.url}"
 
     
 

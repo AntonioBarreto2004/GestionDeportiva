@@ -35,7 +35,7 @@ class Rol(models.Model):
         verbose_name = 'Rol'
         verbose_name_plural = 'Roles'
         db_table = 'rol'
-        ordering = ['id']
+        ordering = ['name_rol']
 
 class gender(models.Model):
     name_gender = models.CharField(max_length=30, verbose_name="Genero")
@@ -91,7 +91,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     disability = models.CharField(max_length=250, verbose_name='Dicapacidad')
     date_create = models.DateField(auto_now_add=True, verbose_name='Fecha de creación')
     type_document = models.ForeignKey(DocumentType, on_delete=models.CASCADE, verbose_name='Tipo de documento')
-    num_document = models.IntegerField(validators=[MaxValueValidator(9999999999)], verbose_name='Número de documento')
+    num_document = models.CharField(max_length=10, validators=[RegexValidator(r'^\d{8,10}$', "El número de documento debe tener entre 8 y 10 dígitos.")])
     file = models.FileField(upload_to='media/', verbose_name='Documento Consentimiento')
     file_v = models.FileField(upload_to='media/', verbose_name='Documento Visto Medico')
     file_f = models.FileField(upload_to='media/', verbose_name='Documento Fotocopia Del Documento')
@@ -124,5 +124,5 @@ class User(AbstractBaseUser, PermissionsMixin):
         verbose_name = 'Usuario'
         verbose_name_plural = 'Usuarios'
         db_table = 'user'
-        ordering = ['id']
+        ordering = ['date_create']
 

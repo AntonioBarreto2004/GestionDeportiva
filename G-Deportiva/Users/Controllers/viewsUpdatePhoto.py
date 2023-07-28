@@ -11,7 +11,7 @@ def update_profile_photo(request, user_id):
         user = User.objects.get(id=user_id)
         new_photo = request.data.get('photo_profile')
         if not user:
-            return Response(data={'code':'500_INTERNAL_SERVER_ERROR', 'message': 'Usuario no existe',  'status':False}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response(data={'code': status.HTTP_200_OK, 'message': 'Usuario no existe',  'status':False ,'data': None}, )
 
         if not user.photo_profile:
             user.photo_profile = new_photo
@@ -21,11 +21,11 @@ def update_profile_photo(request, user_id):
 
         user.save()
 
-        return Response(data={'code':'HTTP_200_OK', 'message': 'Foto de perfil actualizada correctamente', 'status':True}, status=status.HTTP_200_OK)
+        return Response(data={'code': status.HTTP_200_OK, 'message': 'Foto de perfil actualizada correctamente', 'status':True, 'data':None}, )
 
     except User.DoesNotExist:
-        return Response(data={'code':'500_INTERNAL_SERVER_ERROR', 'message': 'Usuario no existe',  'status':False}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return Response(data={'code':status.HTTP_200_OK, 'message': 'Usuario no existe',  'status':False, 'data': None}, )
 
     except Exception as e:
-        return Response(data={'message': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return Response(data={'message': str(e)}, )
 

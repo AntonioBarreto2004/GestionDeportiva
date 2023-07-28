@@ -8,7 +8,7 @@ from .viewsCompareChanges import compare_changes
 #METODO GET (LISTAR)
 @api_view(['GET'])
 def list_anthro(request):
-    athlete_id = request.GET.get('athlete_id')
+    anthropometric = request.GET.get('anthropometric')
     control_date = request.GET.get('control_date')
     arm = request.GET.get('arm')
     chest = request.GET.get('chest')
@@ -26,8 +26,8 @@ def list_anthro(request):
 
     queryset = AnthropometricHistory.objects.all()
 
-    if athlete_id:
-        queryset = queryset.filter(athlete_id=athlete_id)
+    if anthropometric:
+        queryset = queryset.filter(anthropometric=anthropometric)
     if control_date:
         queryset = queryset.filter(atpt_controlDate=control_date)
     if arm:
@@ -66,13 +66,13 @@ def list_anthro(request):
             status=status.HTTP_404_NOT_FOUND
         )
     
-    serializer = AnthropometricSerializer(queryset, many=True)
+    serializer = AnthropoHistorySerializer(queryset, many=True)
     response_data = {
         'code': status.HTTP_200_OK,
         'message': 'Datos listados Correctamente',
         'status': True
     }
-    return Response(data=(response_data, serializer.data))
+    return Response(data=(response_data, serializer.data), status=status.HTTP_200_OK)
     
 
 
@@ -83,12 +83,11 @@ def create_anthro(request):
     serializer_create.is_valid(raise_exception=True)
     validated_data = serializer_create.validated_data
 
-    athlete_id = validated_data['athlete_id']
-    control_date = validated_data['atpt_controlDate']
+    anthropometric = validated_data['anthropometric']
 
-    if AnthropometricHistory.objects.filter(athlete_id=athlete_id, atpt_controlDate=control_date).exists():
+    if AnthropometricHistory.objects.filter(anthropometric=anthropometric).exists():
         return Response(
-            data={'code': status.HTTP_409_CONFLICT, 'message': 'Ya existe un registro para esta fecha', 'status': False},
+            data={'code': status.HTTP_409_CONFLICT, 'message': 'Ya existe un registro de ese usuario', 'status': False},
             status=status.HTTP_409_CONFLICT
         )
 
