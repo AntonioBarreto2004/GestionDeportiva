@@ -6,7 +6,7 @@ from .models import *
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = '__all__'
+        fields = ['rol','is_active', 'password']
 
     def create(self, validated_data):
         password = validated_data.pop('password')
@@ -32,7 +32,9 @@ class PeopleSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = People
-        fields = '__all__'
+        fields = ['name', 'last_name', 'email', 'photo_user', 'birthdate', 'gender', 'telephone_number',
+                  'type_document_id', 'num_document', 'allergies', 'disabilities', 'file',
+                  'file_v', 'file_f', 'modified_at', 'is_instructors']
 
     def create(self, validated_data):
         user_data = validated_data.pop('user')

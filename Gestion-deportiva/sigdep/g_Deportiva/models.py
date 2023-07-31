@@ -103,7 +103,7 @@ class People(models.Model):
     birthdate = models.DateField()
     gender = models.CharField(max_length=9)
     telephone_number = models.CharField(max_length=10)
-    date_create = models.DateField()
+    date_create = models.DateField(auto_created=True)
     type_document_id = models.CharField(max_length=20)
     num_document = models.IntegerField()
     allergies = models.ForeignKey(Allergies, models.DO_NOTHING, db_column='Allergies_id')  # Field name made lowercase.

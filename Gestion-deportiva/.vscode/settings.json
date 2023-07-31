@@ -1,0 +1,5 @@
+{
+    "python.analysis.extraPaths": [
+        "./sigdep/g_Deportiva/controllers"
+    ]
+}
