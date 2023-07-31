@@ -19,7 +19,7 @@ class Allergies(models.Model):
 
 class Anthropometric(models.Model):
     athlete = models.ForeignKey('Athlete', models.DO_NOTHING)
-    atpt_controldate = models.DateField(db_column='atpt_controlDate')  # Field name made lowercase.
+    atpt_controldate = models.DateField(auto_now_add=True, db_column='atpt_controlDate')  # Field name made lowercase.
     atpt_arm = models.IntegerField()
     atpt_chest = models.CharField(max_length=45)
     atpt_hip = models.IntegerField()
@@ -99,7 +99,7 @@ class People(models.Model):
     email = models.CharField(max_length=255)
     name = models.CharField(max_length=255)
     last_name = models.CharField(max_length=230)
-    photo_user = models.ImageField(upload_to='media/', max_length=255, blank=True)
+    photo_user = models.ImageField(upload_to='media/', null=True, blank=True)
     birthdate = models.DateField()
     gender = models.CharField(max_length=9)
     telephone_number = models.CharField(max_length=10)
@@ -111,7 +111,7 @@ class People(models.Model):
     file = models.FileField(upload_to='media/', blank=True)
     file_v = models.FileField(upload_to='media/', blank=True)
     file_f = models.FileField(upload_to='media/', blank=True)
-    modified_at = models.DateTimeField(auto_now=True)
+    modified_at = models.DateTimeField(auto_now_add=True)
     is_instructors = models.BooleanField(default=False)
 
     class Meta:
@@ -171,7 +171,7 @@ class Services(models.Model):
 class Sports(models.Model):
     sport_name = models.CharField(max_length=30)
     description = models.CharField(max_length=256)
-    created_at = models.DateTimeField(auto_created=True)
+    created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         managed = False
@@ -182,7 +182,7 @@ class Team(models.Model):
     team_name = models.CharField(max_length=40)
     sport = models.ForeignKey(Sports, models.DO_NOTHING)
     team_image = models.CharField(max_length=255)
-    date_create_team = models.DateTimeField(auto_created=True, db_column='date_create_Team')  # Field name made lowercase.
+    date_create_team = models.DateTimeField(auto_now_add=True, db_column='date_create_Team')  # Field name made lowercase.
     description = models.CharField(max_length=256)
     instructors = models.ForeignKey(Instructors, models.DO_NOTHING)
 
