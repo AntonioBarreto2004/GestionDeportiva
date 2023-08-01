@@ -5,9 +5,7 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
 from ..models import Sports
-from django_filters import rest_framework as filters
 from ..serializers import SportsSerializer
-from django.db import IntegrityError
 
 @api_view(['GET'])
 def list_sports(request):

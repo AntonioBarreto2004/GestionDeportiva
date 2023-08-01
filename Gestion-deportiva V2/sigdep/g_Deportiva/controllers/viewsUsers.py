@@ -122,7 +122,7 @@ def create_user(request):
                 'code': status.HTTP_200_OK,
                 'message': 'Los siguientes campos no pueden estar vacíos',
                 'status': False,
-                'data': empty_fields
+                'data': f'{empty_fields}, Entre Otros'
             },
             status=status.HTTP_200_OK
         )
