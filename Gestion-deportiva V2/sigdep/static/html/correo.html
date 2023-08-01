@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f1f1f1;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center; /* Centra horizontalmente */
+            align-items: center; /* Centra verticalmente */
+            height: 100vh; /* Asegura que el cuerpo del documento ocupe toda la altura visible */
+        }
+        .container {
+            flex: 2; 
+            max-width: 600px;
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            /* Permite que el contenido se desborde dentro del contenedor */
+            overflow: auto;
+        }
+        h1 {
+            color: #333333;
+            text-align: center;
+            margin-top: 0;
+        }
+        p {
+            color: #666666;
+            line-height: 1.5;
+        }
+        .button {
+            display: inline-block;
+            background-color: #007bff;
+            color: #ffffff;
+            text-decoration: none;
+            padding: 10px 20px;
+            border-radius: 3px;
+            margin-top: 20px;
+            /* Estilos de Bootstrap */
+            font-family: inherit;
+            font-size: 14px;
+            font-weight: 500;
+            line-height: 1.2;
+            text-align: center;
+            white-space: nowrap;
+            vertical-align: middle;
+            cursor: pointer;
+            border: 1px solid transparent;
+            border-radius: 4px;
+            user-select: none;
+        }
+        .button:hover {
+            background-color: #0056b3;
+        }
+        .formcontainer{
+            text-align: center;
+            display: flex;
+            width: 500px;
+            height: 500px; /* Aumenta la altura del contenedor */
+        }
+        .imagen{
+            flex: 1; 
+            width: 100%;
+            height: 100%; 
+            text-align: center;
+            border-radius: 5px;
+        }
+        .imagen img {
+            /* Ajusta la imagen para que ocupe todo el espacio del contenedor */
+            width: 100%;
+            height: 100%;
+            /* Asegura que la imagen se ajuste dentro del contenedor manteniendo su proporción */
+            object-fit: cover;
+        }
+        ul{
+            list-style: none;
+        }
+    </style>
+    <!-- Estilos de Bootstrap -->
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="formcontainer">
+        <div class="imagen">
+            <img src="https://scontent.fbog14-1.fna.fbcdn.net/v/t39.30808-6/352708759_935096564414041_5259114018118451164_n.jpg?_nc_cat=110&ccb=1-7&_nc_sid=174925&_nc_ohc=UbZlMR8XrH8AX-0jQrw&_nc_zt=23&_nc_ht=scontent.fbog14-1.fna&oh=00_AfDzRD_ShvKh8VBfAfQucnayUZEn-ynMDzKNfagCREuUgw&oe=64C06E6C" alt="">
+         </div>
+        <div class="container" style="text-align: center;">
+            <h1>Bienvenido al Sistema SigDep</h1>
+            <p>Hola {{ user_name }}, Gracias por registrarte. Tu cuenta ha sido creada con éxito.</p>
+            <p>Puedes acceder a nuestro sistema con los siguientes datos:</p>
+            <ul>
+                <li>Correo electrónico: {{ user_email }}</li>
+                <li>Contraseña: {{ password }}</li>
+            </ul>
+           <div class="text-center" style="text-align: center;"> 
+            <p>¡Disfruta de nuestro sistema!</p>
+            <p><a class="button btn btn-primary" href="http://127.0.0.1:8000/login/">Acceder al Sistema</a></p></div>
+            
+        </div>
+    </div>
+</body>
+</html>
