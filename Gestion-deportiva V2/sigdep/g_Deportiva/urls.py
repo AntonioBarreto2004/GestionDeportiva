@@ -1,6 +1,4 @@
-from django.contrib import admin
 from django.urls import path
-
 from g_Deportiva.controllers import viewsUsers
 from g_Deportiva.controllers import viewsRestPassword
 from g_Deportiva.controllers import viewsUpdatePhoto
@@ -9,6 +7,10 @@ from g_Deportiva.controllers import viewsDisability
 from g_Deportiva.controllers import viewsAllergies
 from g_Deportiva.controllers import viewsSports
 from g_Deportiva.controllers import viewsTeam
+from g_Deportiva.controllers import viewsInstructor
+from g_Deportiva.controllers import viewsAnthropometric
+from g_Deportiva.controllers import viewsCompareChanges
+from g_Deportiva.controllers import viewsCategory
 from g_Deportiva import views
 
 urlpatterns = [
@@ -30,19 +32,36 @@ urlpatterns = [
 
     path('list-allergies/', viewsAllergies.list_Allergies, name='list_Allergies'),
     path('allergies-create/', viewsAllergies.create_Allergies, name='create_Allergies'),
-    path('allergies-update/<int:id>/', viewsAllergies.update_Allergies, name='update_Allergies'),
-    path('allergies-delete/<int:id>/', viewsAllergies.delete_Allergies, name='delete_Allergies'),
+    path('allergies-update/<int:pk>/', viewsAllergies.update_Allergies, name='update_Allergies'),
+    path('allergies-delete/<int:pk>/', viewsAllergies.delete_Allergies, name='delete_Allergies'),
 
     path('sports/', viewsSports.list_sports, name='list_sports'),
     path('sports-create/', viewsSports.create_sports, name='create_sports'),
-    path('sports/<int:pk>/', viewsSports.sports_detail, name='sports_detail'),
+    path('sports-update/<int:pk>/', viewsSports.update_sport, name='sports_detail'),
+    path('sports-delete/<int:pk>/', viewsSports.delete_sport, name='sports_detail'),
+    path('sports-state/', viewsSports.state_sport, name='desacive_sports'),
 
     path('list-team/', viewsTeam.list_team, name='List Team'),
     path('create-team/', viewsTeam.create_team, name='Create Team'),
     path('update-team/<int:pk>/', viewsTeam.update_team, name='Update Team'),
     path('delete-team/<int:pk>/', viewsTeam.delete_team, name='Delete Team'),
 
+    path('list-instructors/', viewsInstructor.list_instructors, name='List instructors'),
+    path('create-instructor/', viewsInstructor.create_instructor, name='create instructors'),
+    path('update-instructor/<int:pk>/', viewsInstructor.update_instructor, name='Update instructors'),
+    path('delete-instructor/<int:pk>/', viewsInstructor.delete_instructor, name='Delete instructors'),
+
+    path('list-anthrop/', viewsAnthropometric.list_anthro, name='List Anthropometric'),
+    path('create-anthrop/', viewsAnthropometric.create_anthro, name='Create Anthropometric'),
+    path('update-anthrop/<int:pk>/', viewsAnthropometric.update_anthro, name='Update Anthropometric'),
+    path('dalete-anthrop/<int:pk>/', viewsAnthropometric.delete_anthro, name='Delete Anthropometric'),
+
+    path('compare-changes/', viewsCompareChanges.compare_changes, name='Compare Changes'),
+
+    path('list-category/', viewsCategory.list_category, name='list Category'),
+
     path('login/', views.custom_login, name='Login'),
     path('reset-password/', viewsRestPassword.reset_password, name='reset_Password'),
     path('reset-confirm/<str:uidb64>/<str:token>/', viewsRestPassword.reset_password_confirm, name='reset_password_confirm'),
+    
 ]

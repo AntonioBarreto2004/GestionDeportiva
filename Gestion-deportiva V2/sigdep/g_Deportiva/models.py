@@ -38,8 +38,8 @@ class People(models.Model):
     date_create = models.DateField(auto_now_add=True)
     type_document_id = models.CharField(max_length=20)
     num_document = models.IntegerField()
-    allergies = models.ForeignKey(Allergies, on_delete=models.CASCADE, blank=True)
-    disabilities = models.ForeignKey(Disabilities, on_delete=models.CASCADE, blank=True)
+    allergies = models.ForeignKey(Allergies, on_delete=models.CASCADE, blank=True, null=True)
+    disabilities = models.ForeignKey(Disabilities, on_delete=models.CASCADE, blank=True, null=True)
     file_documentidentity = models.FileField(upload_to='documents/', blank=True)
     file_v = models.FileField(upload_to='documents/', blank=True)
     file_f = models.FileField(upload_to='documents/', blank=True)
@@ -85,7 +85,7 @@ class Athlete(models.Model):
 class Team(models.Model):
     team_name = models.CharField(max_length=40)
     sport = models.ForeignKey(Sports, on_delete=models.CASCADE)
-    team_image = models.CharField(max_length=255)
+    team_image = models.CharField(max_length=255, blank=True, null=True)
     date_create_team = models.DateTimeField(auto_now_add=True)  # Field name made lowercase.
     description = models.CharField(max_length=250)
     instructors = models.ForeignKey(Instructors, on_delete=models.CASCADE)
@@ -108,7 +108,7 @@ class AthleteTeam(models.Model):
 class Category(models.Model):
     sport = models.ForeignKey(Sports, on_delete=models.CASCADE)
     category_type = models.CharField(max_length=11)
-    c_name = models.CharField(max_length=30)
+    category_name = models.CharField(max_length=30)
     date_create_category = models.DateTimeField(auto_now_add=True)  # Field name made lowercase.
 
     def __str__(self):
