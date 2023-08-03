@@ -46,6 +46,7 @@ def reset_password(request):
               'data': None}
     )
 
+
 @api_view(['POST'])
 def reset_password_confirm(request, uidb64, token):
     try:

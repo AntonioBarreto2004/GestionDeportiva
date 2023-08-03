@@ -47,14 +47,13 @@ def list_users(request):
         if num_document:
             filters['num_document'] = num_document
         if rol:
-            filters['rol__name__icontains'] = rol
+            filters['users__rol__name_rol__icontains'] = rol
 
-        # Obtener todos los objetos People y User que coincidan con los parámetros de consulta
+        # Obtener todos los objetos People que coincidan con los parámetros de consulta
         people = People.objects.filter(**filters)
-        users = User.objects.filter(people__in=people)
 
         # Comprobar si hay datos
-        if not people and not users:
+        if not people:
             return Response(
                 data={
                     'code': status.HTTP_200_OK, 
@@ -64,19 +63,25 @@ def list_users(request):
                 }
             )
 
-        # Serializar los objetos
-        people_serializer = PeopleSerializer(people, many=True)
-        user_serializer = UserSerializer(users, many=True)
+        # Serializar los objetos People y obtener los usuarios y nombres de rol asociados
+        people_data = []
+        for person in people:
+            person_data = PeopleSerializer(person).data
+            user = User.objects.get(people=person)
+            user_data = UserSerializer(user).data
+            person_data['users'] = user_data
+            rol_name = Rol.objects.get(id=user_data['rol']).name_rol if 'rol' in user_data else None
+            person_data['users']['rol_name'] = rol_name
+            people_data.append(person_data)
 
-        # Devolver la respuesta
+        # Devolver la respuesta con la lista de personas y usuarios asociados
         return Response(
             data={
                 'code': status.HTTP_200_OK, 
                 'status': True, 
                 'message': 'Listado de usuarios y personas obtenido exitosamente',
                 'data': {
-                    'people': people_serializer.data,
-                    'users': user_serializer.data
+                    'people': people_data
                 }
             }
         )
@@ -89,7 +94,6 @@ def list_users(request):
             'data': None
         }
         return Response(data)
-
 
 
 # Envío de correo al crear usuario
@@ -201,6 +205,13 @@ def create_user(request):
     allergies_field = people_data.get('allergies')
     disabilities_field = people_data.get('disabilities')
 
+    # Verificar si allergies y disabilities son 0 y tratarlos como nulos
+    if allergies_field == 0:
+        people_data.pop('allergies', None)
+
+    if disabilities_field == 0:
+        people_data.pop('disabilities', None)
+
     if allergies_field == "" or disabilities_field == "":
         # Obtener las opciones disponibles para allergies y disabilities
         allergy_options = Allergies.objects.all()
@@ -214,7 +225,7 @@ def create_user(request):
         response_data = {
             'code': status.HTTP_200_OK,
             'status': True,
-            'message': 'Alergias y Discapacidades Disponibles',
+            'message': 'Alergias y Discapacidades Disponibles, en caso de no tener por favor poner el valor 0 sin comillas',
             'data': {'allergies_options': allergy_serializer.data,
             'disabilities_options': disability_serializer.data,},
         }
@@ -226,7 +237,7 @@ def create_user(request):
     if people_serializer.is_valid():
         people = people_serializer.save()
     else:
-        return Response(people_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response(people_serializer.errors)
 
     # Paso 2: Crear la instancia de User y asociarlo con People
     if user_data:
@@ -244,7 +255,7 @@ def create_user(request):
     response_data = {
         'code': status.HTTP_201_CREATED,
         'status': True,
-        'message': 'Usuario creado exitosamente',
+        'message': 'Usuario creado exitosamente, se le ha enviado un correo.',
         'data': None
     }
     return Response(response_data, status=status.HTTP_201_CREATED)
@@ -255,74 +266,84 @@ def create_user(request):
 def update_user(request, pk):
     try:
         people = People.objects.get(pk=pk)
-        serializer = PeopleSerializer(people, data=request.data, partial=True)
+
+        people_data = request.data.get('people')
+        if people_data:
+            serializerPd = PeopleSerializer(people, data=people_data, partial=True)
+            serializerPd.is_valid(raise_exception=True)
+            people = serializerPd.save()  # Actualiza los datos de People
 
         if 'photo_user' in request.FILES:
             people.photo_user = request.FILES['photo_user']
 
-    except People.DoesNotExist:
-        return Response(
-            data={'code': status.HTTP_200_OK, 
-                  'message': 'Persona no existe',  
-                  'status': False,
-                  'data': None
-                  }, 
-        )
+        name = request.data.get('name')  # Obtén el nombre de los datos de la solicitud
+        last_name = request.data.get('last_name')  # Obtén el apellido de los datos de la solicitud
 
-    name = request.data.get('name')  # Obtén el nombre de los datos de la solicitud
-    last_name = request.data.get('last_name')  # Obtén el apellido de los datos de la solicitud
+        if name and not re.match(r'^[a-zA-Z\s]+$', name):
+            response_data = {
+                'code': status.HTTP_200_OK,
+                'message': 'Nombre de la persona solo puede contener letras y espacios.',
+                'status': False
+            }
+            return Response(response_data)
 
-    if name and not re.match(r'^[a-zA-Z\s]+$', name):
-        response_data = {
-            'code': status.HTTP_200_OK,
-            'message': 'Nombre de la persona solo puede contener letras y espacios.',
-            'status': False
-        }
-        return Response(response_data)
+        if last_name and not re.match(r'^[a-zA-Z\s]+$', last_name):
+            response_data = {
+                'code': status.HTTP_200_OK,
+                'message': 'Apellido de la persona solo puede contener letras y espacios.',
+                'status': False
+            }
+            return Response(response_data)
 
-    if last_name and not re.match(r'^[a-zA-Z\s]+$', last_name):
-        response_data = {
-            'code': status.HTTP_200_OK,
-            'message': 'Apellido de la persona solo puede contener letras y espacios.',
-            'status': False
-        }
-        return Response(response_data)
-    
-    # Nuevas validaciones
-    non_updateable_fields = ['birthdate', 'num_document']
-    for field in non_updateable_fields:
-        if field in request.data:
+        # Nuevas validaciones
+        non_updateable_fields = ['birthdate', 'num_document']
+        for field in non_updateable_fields:
+            if field in request.data:
+                return Response(
+                    data={'code': status.HTTP_400_BAD_REQUEST,
+                          'message': f'No se puede actualizar el campo: {field}',
+                          'status': False,
+                          'data': None
+                          },
+                )
+        num_telefono = request.data.get('num_telefono')
+        if num_telefono and not re.fullmatch(r'^\d{10}$', num_telefono):
             return Response(
-                data={'code': status.HTTP_400_BAD_REQUEST, 
-                      'message': f'No se puede actualizar el campo: {field}',  
+                data={'code': status.HTTP_400_BAD_REQUEST,
+                      'message': 'El número de teléfono debe tener exactamente 10 dígitos.',
                       'status': False,
                       'data': None
-                      }, 
+                      },
             )
-    num_telefono = request.data.get('num_telefono')
-    if num_telefono and not re.fullmatch(r'^\d{10}$', num_telefono):
+
+        # Continúa con la operación normal de actualización
+
+        # Actualizar los datos de User (si existen en la solicitud)
+        user_data = request.data.get('user')
+        if user_data:
+            user = User.objects.get(people=people)
+            user.rol_id = user_data.get('rol', user.rol_id)
+            user.save()
+
+        # Actualizar el campo modified_at con la fecha y hora actual
+        people.modified_at = timezone.localtime()
+        people.save()
+
         return Response(
-            data={'code': status.HTTP_400_BAD_REQUEST, 
-                  'message': 'El número de teléfono debe tener exactamente 10 dígitos.',  
+            data={'code': status.HTTP_202_ACCEPTED,
+                  'message': 'Datos actualizados exitosamente',
+                  'status': True,
+                  'data': people.modified_at},
+        )
+
+    except People.DoesNotExist:
+        return Response(
+            data={'code': status.HTTP_200_OK,
+                  'message': 'Persona no existe',
                   'status': False,
                   'data': None
-                  }, 
+                  },
         )
-    # Continúa con la operación normal de actualización
-    serializerPd = PeopleSerializer(people, data=request.data, partial=True)
-    serializerPd.is_valid(raise_exception=True)
-    # Actualizar el campo modified_at con la fecha y hora actual
-    modification_data = people.modified_at = timezone.now()
-
-    serializer.is_valid(raise_exception=True)
-    serializerPd.save()
-    
-    return Response (
-        data={'code': status.HTTP_202_ACCEPTED, 
-              'message': 'Datos actualizados exitosamente',  
-              'status': True,  
-              'data': modification_data}, 
-    )
 
 @api_view(['DELETE'])
 def delete_user(request, people_id):

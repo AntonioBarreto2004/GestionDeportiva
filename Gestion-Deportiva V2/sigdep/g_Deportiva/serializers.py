@@ -17,7 +17,7 @@ class AllergiesSerializer(serializers.ModelSerializer):
 class RolSerializer(serializers.ModelSerializer):
     class Meta:
         model = Rol
-        fields = '__all__'
+        fields = ('id','name_rol', 'description')
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
@@ -34,7 +34,8 @@ class UserSerializer(serializers.ModelSerializer):
 
 class PeopleSerializer(serializers.ModelSerializer):
     user = UserSerializer(required=False)  # Cambiamos a required=False para que sea opcional
-    
+    rol_name = serializers.CharField(source='users.rol.name', read_only=True)
+
     def to_internal_value(self, data):
         allergies_value = data.get('allergies', None)
         disabilities_value = data.get('disabilities', None)
@@ -51,7 +52,7 @@ class PeopleSerializer(serializers.ModelSerializer):
         model = People
         fields = ['id','user', 'name', 'last_name', 'email', 'photo_user', 'birthdate', 'gender', 'telephone_number',
                   'type_document_id', 'num_document', 'allergies', 'disabilities', 'file_documentidentity',
-                  'file_v', 'file_f', 'modified_at', 'is_instructors']
+                  'file_v', 'file_f', 'modified_at', 'is_instructors', 'rol_name']
 
     def create(self, validated_data):
         user_data = validated_data.pop('user', None)  # Si no se proporciona 'user', establecer como None
@@ -69,18 +70,54 @@ class PeopleSerializer(serializers.ModelSerializer):
 class SportsSerializer(serializers.ModelSerializer):
     class Meta:
         model = Sports
-        fields = '__all__'
+        fields = ('id','sport_name', 'description', 'created_at', 'sport_status')
 
 class TeamSerializer(serializers.ModelSerializer):
     class Meta:
         model = Team
-        fields = '__all__'
-class AthleteTeamSerializer(serializers.ModelSerializer):
+        fields = ('instructors', 'sport','team_name',  'team_image', 'description', 'date_create_team')
+
+class InstructorSerializer(serializers.ModelSerializer):
+    people = serializers.SerializerMethodField()
+
+    def get_people(self, obj):
+        # Obtener el nombre de la persona
+        return f"{obj.people.name} {obj.people.last_name}"
     class Meta:
-        model = AthleteTeam
+        model = Instructors
+        fields = ('id','people', 'specialization', 'experience_years')
+
+
+class AnthropometricSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Anthropometric
         fields = '__all__'
-        
+
+class CategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Category
+        fiedls = ('id', 'sport', 'category_type', 'category_name', 'date_create_category')
+
 class AthleteSerializer(serializers.ModelSerializer):
+    people = serializers.SerializerMethodField()
+    instructor_id = serializers.SerializerMethodField()
+    sports = serializers.SerializerMethodField()
+
+    def get_people(self, obj):
+        # Obtener el nombre de la persona
+        return f"{obj.people.name} {obj.people.last_name}"
+    
+    def get_instructor(self, obj):
+        # Obtener el nombre del instructor
+        if obj.instructor:
+            return f"{obj.instructor.people.name} {obj.instructor.people.last_name}"
+
+
+    def get_sports(self, obj):
+        # Obtener el nombre del deporte
+        if obj.sports:
+            return f"{obj.sports.sport_name}"  # Reemplaza 'name' con el nombre real del campo que contiene el nombre del deporte
+    
     class Meta:
         model = Athlete
-        fields = '__all__'
+        fields = ('id', 'instructor_id', 'people', 'sports', 'technicalv', 'tacticalv', 'physicalv', 'athlete_status')

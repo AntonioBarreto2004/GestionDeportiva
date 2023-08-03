@@ -3,238 +3,200 @@ from rest_framework import status
 from rest_framework.decorators import api_view
 from django_filters import rest_framework as filters
 from rest_framework.response import Response
-from ..serializers import AthleteSerializer
-from ..models import Athlete, People
-from django.contrib.auth.models import User
+from ..serializers import *
+from ..models import *
 
+#ATHLETE
 
-# Clase FilterAthlete para filtrar los datos de los atletas
-class FilterAthlete(filters.FilterSet):
-    class Meta:
-        model = Athlete
-        fields = {
-            'id': ['exact'],
-            'instructor': ['exact'],
-            'people': ['exact'],
-            'sports': ['exact'],
-        }
-
-
-# METODO GET (LISTAR)
+        #METODO GET (LISTAR)
 @api_view(['GET'])
 def list_athlete(request):
     try:
+        class filter_athlete(filters.FilterSet):
+            class Meta:
+                Model = Athlete
+                fields = {
+                    'id':['exact', 'icontains'],
+                    'a_category':['exact', 'icontains'],
+                    'at_team':['exact', 'icontains'],
+                    'c_position':['exact', 'icontains'],
+                    'c_positiona':['exact', 'icontains'],
+                }
+
         queryset = Athlete.objects.all()
-        athlete_filter = FilterAthlete(request.query_params, queryset=queryset)
+        athlete_filter = filter_athlete(request.query_params, queryset=queryset)
         filtered_queryset = athlete_filter.qs
 
         if not filtered_queryset.exists():
             return Response(
                 data={
-                    'code': status.HTTP_200_OK,
+                    'code': status.HTTP_200_OK, 
                     'message': 'No hay datos registrados',
                     'status': False,
                     'data': None
-                },
+                    },
             )
-
+        
         serializer = AthleteSerializer(filtered_queryset, many=True)
-
-        response_data = {
+        
+        responde_data={
             'code': status.HTTP_200_OK,
             'message': 'Lista de Atletas exitosa',
-            'status': True,
+            'status' : True,
             'data': serializer.data
         }
-        return Response(response_data)
+        return Response(responde_data)
     except requests.exceptions.ConnectionError:
-        data = {
+        data={
             'code': status.HTTP_400_BAD_REQUEST,
             'status': False,
-            'message': 'La URL se ha perdido. Por favor, inténtalo más tarde.',
+            'message': 'La URL se ha perdido. Por favor, inténtalo más tarde.', 
             'data': None
-        }
+                  }
         return Response(data)
-
+    
     except Exception as e:
-        data = {
+        data= {
             'code': status.HTTP_500_INTERNAL_SERVER_ERROR,
-            'status': False,
+            'status': False, 
             'message': 'Error del servidor',
             'data': None
-        }
+                    }
         return Response(data)
 
-
-# METODO POST (AGREGAR)
+    
 @api_view(['POST'])
 def create_athlete(request):
-    try:
-        serializer = AthleteSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
+    serializer = AthleteSerializer(data=request.data)
+    if serializer.is_valid():
+        # Obtener el ID de la persona del atleta y el instructor de la solicitud
+        person_id = request.data.get('people')
 
-        # Obtener el ID del usuario del campo 'at_user'
-        user_id = request.data.get('id')
-
-        # Verificar si el usuario existe en la base de datos
-        try:
-            user = User.objects.get(id=user_id)
-        except User.DoesNotExist:
-            response_data = {
-                'code': status.HTTP_200_OK,
-                'message': 'El usuario no existe.',
+        # Verificar si ya existe un atleta con la misma persona asociada
+        if Athlete.objects.filter(people_id=person_id).exists():
+            return Response({
+                'code': status.HTTP_400_BAD_REQUEST,
+                'message': 'Ya existe un Atleta asociado a esta persona.',
                 'status': False,
                 'data': None
-            }
-            return Response(response_data)
+            }, status=status.HTTP_400_BAD_REQUEST)
 
-        # Verificar si el usuario está autenticado
-        if not request.user.is_authenticated:
-            response_data = {
-                'code': status.HTTP_200_OK,
-                'message': 'Debes iniciar sesión para crear un atleta.',
-                'status': False,
-                'data': None
-            }
-            return Response(response_data)
-
-        # Verificar si el usuario existe y tiene el rol de "Instructor" o "Administrador"
+        # Verificar si la persona tiene el rol de Atleta (rol=3)
         try:
-            if not user.rol.name_rol in ['Instructor', 'Administrador']:
-                response_data = {
-                    'code': status.HTTP_200_OK,
-                    'message': 'No tienes permisos para crear un atleta.',
+            person = People.objects.get(id=person_id)
+            user = User.objects.get(people=person)
+            if user.rol_id != 1:  # Asumiendo que el rol de Atleta tiene id=3, ajusta esto si es necesario
+                return Response({
+                    'code': status.HTTP_400_BAD_REQUEST,
                     'status': False,
+                    'message': 'La persona no es Atleta.',
                     'data': None
-                }
-                return Response(response_data)
-        except User.DoesNotExist:
-            response_data = {
-                'code': status.HTTP_200_OK,
-                'message': 'El usuario no existe.',
+                }, status=status.HTTP_400_BAD_REQUEST)
+        except People.DoesNotExist:
+            return Response({
+                'code': status.HTTP_400_BAD_REQUEST,
                 'status': False,
+                'message': 'La persona no existe.',
                 'data': None
-            }
-            return Response(response_data)
+            }, status=status.HTTP_400_BAD_REQUEST)
 
         # Guardar el atleta
         serializer.save()
 
-        response_data = {
+        return Response({
             'code': status.HTTP_201_CREATED,
             'message': 'Atleta registrado exitosamente',
             'status': True,
             'data': None
-        }
-        return Response(response_data, status=status.HTTP_201_CREATED)
+        }, status=status.HTTP_201_CREATED)
+    else:
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    except requests.exceptions.ConnectionError:
-        data = {
-            'code': status.HTTP_400_BAD_REQUEST,
-            'status': False,
-            'message': 'La URL se ha perdido. Por favor, inténtalo más tarde.',
-            'data': None
-        }
-        return Response(data)
+   
 
-    except Exception as e:
-        data = {
-            'code': status.HTTP_500_INTERNAL_SERVER_ERROR,
-            'status': False,
-            'message': 'Error del servidor',
-            'data': None
-        }
-        return Response(data)
+    
 
-
-# METODO PUT/PATCH (ACTUALIZAR)
-@api_view(['PUT', 'PATCH'])
+@api_view(['PATCH'])
 def update_athlete(request, pk):
     try:
         try:
             athlete = Athlete.objects.get(pk=pk)
         except Athlete.DoesNotExist:
-            return Response(
-                data={
-                    'code': status.HTTP_200_OK,
-                    'message': 'Atleta no encontrado.',
-                    'status': False,
-                    'data': None
-                }
-            )
-
-        serializer = AthleteSerializer(athlete, data=request.data, partial=request.method == 'PATCH')
+            return Response(data={'code': status.HTTP_200_OK, 
+                                'message': 'Atleta no encontrado.', 
+                                'status': False,
+                                'data':None
+                                },
+                            )
+        
+        serializer = AthleteSerializer(athlete, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
-
-        response_data = {
+        
+        response_data ={
             'code': status.HTTP_200_OK,
-            'message': f'Datos de {athlete.instructor.name} actualizados exitosamente',
+            'message': f'Datos de {athlete.at_user.name} actualizados exitosamente',
             'status': True,
             'data': None
         }
         return Response(response_data)
-
     except requests.exceptions.ConnectionError:
-        data = {
+        data={
             'code': status.HTTP_400_BAD_REQUEST,
             'status': False,
-            'message': 'La URL se ha perdido. Por favor, inténtalo más tarde.',
+            'message': 'La URL se ha perdido. Por favor, inténtalo más tarde.', 
             'data': None
-        }
+                  }
         return Response(data)
-
+    
     except Exception as e:
-        data = {
+        data= {
             'code': status.HTTP_500_INTERNAL_SERVER_ERROR,
-            'status': False,
+            'status': False, 
             'message': 'Error del servidor',
             'data': None
-        }
+                    }
         return Response(data)
 
 
-# METODO DELETE (ELIMINAR)
 @api_view(['DELETE'])
 def delete_athlete(request, pk):
     try:
         try:
             athlete = Athlete.objects.get(pk=pk)
         except Athlete.DoesNotExist:
-            return Response(
-                data={
-                    'code': status.HTTP_200_OK,
-                    'message': 'Atleta no encontrado.',
-                    'status': False,
-                    'data': None
-                }
-            )
+            return Response(data={'code': status.HTTP_200_OK, 
+                                'message': 'Atleta no encontrado.', 
+                                'status': False,
+                                'data':None
+                                }, 
+                    
+                            )
 
-        athlete_name = athlete.instructor.name
+        athlete_name = athlete.at_user.name
         athlete.delete()
-
-        response_data = {
+        
+        response_data ={
             'code': status.HTTP_204_NO_CONTENT,
             'message': f'Datos de {athlete_name} eliminados exitosamente',
             'status': True,
             'data': None
         }
-        return Response(response_data, status=status.HTTP_204_NO_CONTENT)
-
+        return Response(data=response_data, status=status.HTTP_204_NO_CONTENT)
     except requests.exceptions.ConnectionError:
-        data = {
+        data={
             'code': status.HTTP_400_BAD_REQUEST,
             'status': False,
-            'message': 'La URL se ha perdido. Por favor, inténtalo más tarde.',
+            'message': 'La URL se ha perdido. Por favor, inténtalo más tarde.', 
             'data': None
-        }
+                  }
         return Response(data)
-
+    
     except Exception as e:
-        data = {
+        data= {
             'code': status.HTTP_500_INTERNAL_SERVER_ERROR,
-            'status': False,
+            'status': False, 
             'message': 'Error del servidor',
             'data': None
-        }
+                    }
         return Response(data)

@@ -1,13 +1,6 @@
-import requests
 from rest_framework.decorators import api_view
-from django.core.mail import send_mail
-from django.template.loader import render_to_string
-from django.utils.html import strip_tags
 from rest_framework.response import Response
 from rest_framework import status
-from django.utils import timezone
-from django_filters import rest_framework as filters
-
 from ..models import *
 from ..serializers import *
 
@@ -88,16 +81,28 @@ def create_Allergies(request):
 
 
 @api_view(['PATCH'])
-def update_Allergies(request, id):
+def update_Allergies(request, pk):
     """ Actualiza parcialmente una discapacidad """
     try:
-        allergies = Allergies.objects.get(pk=id)
+        allergies = Allergies.objects.get(pk=pk)
     except Allergies.DoesNotExist:
         return Response({
             'code': status.HTTP_200_OK,
             'status': False,
             'message': 'La alergia no fue encontrada',
         })
+    
+    allergie_name = request.data.get('allergie_name')
+
+    existing_sport = Allergies.objects.filter(allergie_name=allergie_name).first()
+    if existing_sport:
+        return Response(
+            data={
+                'code': status.HTTP_200_OK,
+                'status': False,
+                'message': 'Ya existe una Alergia con el mismo nombre.',
+                'data': None
+            })
 
     # Validamos que la descripción no supere los 250 caractéres
     description = request.data.get('description', None)
@@ -128,10 +133,10 @@ def update_Allergies(request, id):
     })
 
 @api_view(['DELETE'])
-def delete_Allergies(request, id):
+def delete_Allergies(request, pk):
     """ Elimina una discapacidad """
     try:
-        allergies = Allergies.objects.get(pk=id)
+        allergies = Allergies.objects.get(pk=pk)
     except Allergies.DoesNotExist:
         return Response({
             'code': status.HTTP_200_OK,

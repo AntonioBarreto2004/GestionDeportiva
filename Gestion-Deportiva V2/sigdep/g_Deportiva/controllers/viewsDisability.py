@@ -76,6 +76,24 @@ def create_disability(request):
             'message': 'No se proporcionó una descripción para la discapacidad',
             'data': None
         })
+    
+    # Verificamos que el nombre de la alergia no esté duplicado
+    if Disabilities.objects.filter(disability_name=disability_name).exists():
+        return Response({
+            'code': status.HTTP_200_OK,
+            'status': False,
+            'message': 'La Discapacidad con ese nombre ya existe',
+            'data': None
+        })
+
+    # Verificamos que la descripción no supere los 250 caracteres
+    if len(description) > 250:
+        return Response({
+            'code': status.HTTP_200_OK,
+            'status': False,
+            'message': 'La descripción no debe superar los 250 caracteres',
+            'data': None
+        })
 
 
     # Creamos la discapacidad una vez superadas todas las validaciones
@@ -101,6 +119,18 @@ def update_disability(request, disability_id):
             'status': False,
             'message': 'La discapacidad no fue encontrada',
         })
+    
+    disability_name = request.data.get('disability_name')
+
+    existing_sport = Disabilities.objects.filter(disability_name=disability_name).first()
+    if existing_sport:
+        return Response(
+            data={
+                'code': status.HTTP_200_OK,
+                'status': False,
+                'message': 'Ya existe una Discapacidad con el mismo nombre.',
+                'data': None
+            })
 
     # Validamos que la descripción no supere los 250 caractéres
     description = request.data.get('description', None)

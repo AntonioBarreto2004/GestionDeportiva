@@ -53,6 +53,18 @@ def update_role(request, pk):
                               'message': 'Rol no existe',  
                               'status':False})
     
+    name_rol = request.data.get('name_rol')
+
+    existing_sport = Rol.objects.filter(name_rol=name_rol).first()
+    if existing_sport:
+        return Response(
+            data={
+                'code': status.HTTP_200_OK,
+                'status': False,
+                'message': 'Ya existe un Rol con el mismo nombre.',
+                'data': None
+            })
+    
     serializerE = RolSerializer(role, data=request.data, partial=True)
     serializerE.is_valid(raise_exception=True)
     serializerE.save()

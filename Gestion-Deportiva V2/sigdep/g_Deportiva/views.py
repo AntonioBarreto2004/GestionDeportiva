@@ -89,6 +89,33 @@ def profile_pre_save(sender, instance, **kwargs):
             # Asignar la fecha y hora actual en la zona horaria de Colombia al campo modified_at
             instance.modified_at = current_time
 
+#Actualizar fecha de cambios
+@receiver(pre_save, sender=Anthropometric)
+def profile_pre_save(sender, instance, **kwargs):
+    if instance.pk:
+        original_instance = Anthropometric.objects.get(pk=instance.pk)
+        if (
+            original_instance.arm != instance.arm
+            or original_instance.chest != instance.chest
+            or original_instance.hip != instance.hip
+            or original_instance.twin != instance.twin
+            or original_instance.humerus != instance.humerus
+            or original_instance.femur != instance.femur
+            or original_instance.wrist != instance.wrist
+            or original_instance.triceps != instance.triceps
+            or original_instance.supraspinal != instance.supraspinal
+            or original_instance.pectoral != instance.pectoral
+            or original_instance.zise != instance.zise
+            or original_instance.weight != instance.weight
+            or original_instance.bmi != instance.bmi
+        ):
+            colombia_timezone = pytz.timezone('America/Bogota')
+            # Obtener la fecha y hora actual en la zona horaria de Colombia
+            current_time = datetime.now(colombia_timezone)
+            # Asignar la fecha y hora actual en la zona horaria de Colombia al campo updated_date
+            instance.updated_date = current_time
+
+
 
 
 
