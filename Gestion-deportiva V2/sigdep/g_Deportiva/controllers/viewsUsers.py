@@ -83,6 +83,7 @@ def list_users(request):
             'data': None
         }
         return Response(data)
+    
 # Envío de correo al crear usuario
 def send_activation_email(user_name, user_email, password):
     subject = 'Bienvenido al Sistema SigDep'

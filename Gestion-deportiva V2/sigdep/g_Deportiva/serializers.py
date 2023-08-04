@@ -86,8 +86,8 @@ class InstructorSerializer(serializers.ModelSerializer):
 class AnthropometricSerializer(serializers.ModelSerializer):
     class Meta:
         model = Anthropometric
-        fields = '__all__'
-
+        fields = ('id', 'athlete', 'controlDate', 'arm', 'chest', 'hip', 'twin', 'humerus', 'femur',
+                  'wrist', 'triceps', 'supraspinal', 'pectoral', 'zise', 'weight', 'bmi', 'updated_date')
 class CategorySerializer(serializers.ModelSerializer):
 
     class Meta:

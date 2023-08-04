@@ -7,13 +7,13 @@ from ..serializers import *
 
 @api_view(['GET'])
 def list_category(request):
-    try:
         category_type = request.GET.get('category_type')
         sport_id = request.GET.get('sport')
         category_name = request.GET.get('category_name')
 
         # Filtrar las categorías si se proporcionan los parámetros de filtro
         list_category = Category.objects.all()
+
         if category_type:
             list_category = list_category.filter(category_type=category_type)
         if sport_id:
@@ -30,15 +30,16 @@ def list_category(request):
             }
             return Response(response_data)
 
-        serializer_ctg = CategorySerializer(list_category, many=True)
 
         data = []
-        for item in serializer_ctg.data:
-            sport_id = item.pop('sport')  # Remover el ID del deporte del objeto
-            sport = Sports.objects.get(id=sport_id)
-            item['sport'] = sport.sport_name  # Añadir el nombre del deporte
 
-        data.append(item)
+        for item in list_category:
+            serializer_ctg = CategorySerializer(item)
+            sport_id = serializer_ctg.data['sport']  # Remover el ID del deporte del objeto
+            sport = Sports.objects.get(id=sport_id)
+            item_data = serializer_ctg.data
+            item_data['sport'] = f"{sport.sport_name } "# Añadir el nombre del deporte
+            data.append(item_data)
 
         response_data = {
             'code': status.HTTP_200_OK,
@@ -47,15 +48,6 @@ def list_category(request):
             'data': data
         }
         return Response(response_data)
-    except Exception as e:
-        data = {
-            'code': status.HTTP_500_INTERNAL_SERVER_ERROR,
-            'status': False,
-            'message': 'Error del servidor',
-            'data': None
-        }
-        return Response(data)
-
     
     
 @api_view(['POST'])

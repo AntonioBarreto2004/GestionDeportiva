@@ -173,7 +173,7 @@ class ReceiptPayment(models.Model):
 
 class Anthropometric(models.Model):
     athlete = models.ForeignKey(Athlete, on_delete=models.CASCADE)
-    controlDate = models.DateField()  # Field name made lowercase.
+    controlDate = models.DateField(auto_now_add=True)  # Field name made lowercase.
     arm = models.IntegerField()
     chest = models.CharField(max_length=45)
     hip = models.IntegerField()

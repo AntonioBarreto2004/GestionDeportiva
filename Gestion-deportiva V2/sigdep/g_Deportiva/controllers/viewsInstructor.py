@@ -7,7 +7,6 @@ from ..serializers import *
 
 @api_view(['GET'])
 def list_instructors(request):
-    try:
         instructors_p = request.GET.get('people', '')
         experience_years = request.GET.get('experience_years', '')
 
@@ -20,51 +19,32 @@ def list_instructors(request):
             queryset = queryset.filter(experience_years__icontains=experience_years)
 
         if not queryset.exists():
-            responde_data = {
+            response_data = {
                 'code': status.HTTP_200_OK,
                 'status': False,
                 'message': 'No hay datos registrados',
                 'data': None
             }
-
-            return Response (responde_data)
-        
-        serializer_instructor = InstructorSerializer(queryset, many=True)
+            return Response(response_data)
 
         data = []
-        for item in serializer_instructor.data:
-            person_id = item.pop('people')  # Remover el ID de la persona del objeto
-            instructor = People.objects.get(id=person_id)
-            item['Instructor'] = f"{instructor.name} {instructor.last_name}"  # Añadir el nombre de la persona
 
-        data.append(item)
+        for item in queryset:
+            serializer_instructor = InstructorSerializer(item)
+            person_id = serializer_instructor.data['people']
+            instructor = People.objects.get(id=person_id)  # Asegúrate de importar el modelo People
+            item_data = serializer_instructor.data
+            item_data['Instructor'] = f"{instructor.name} {instructor.last_name}"
+            data.append(item_data)
 
-        responde_data = {
-                'code': status.HTTP_200_OK,
-                'status': False,
-                'message': 'Datos encontrados exitosamente',
-                'data': data
-            }
+        response_data = {
+            'code': status.HTTP_200_OK,
+            'status': True,
+            'message': 'Datos encontrados exitosamente',
+            'data': data
+        }
 
-        return Response (responde_data)
-    
-    except requests.exceptions.ConnectionError:
-        data={
-            'code': status.HTTP_400_BAD_REQUEST,
-            'status': False,
-            'message': 'La URL fallo. Por favor, inténtalo más tarde.', 
-            'data': None
-                  }
-        return Response(data)
-    
-    except Exception as e:
-        data= {
-            'code': status.HTTP_500_INTERNAL_SERVER_ERROR,
-            'status': False, 
-            'message': 'Error del servidor',
-            'data': None
-                    }
-        return Response(data)
+        return Response(response_data)
     
 
 @api_view(['POST'])

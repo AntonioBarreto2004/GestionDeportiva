@@ -65,33 +65,134 @@ def list_anthro(request):
             'data': None
             })
     
-    serializer = AnthropometricSerializer(queryset, many=True)
-    response_data = {
-        'code': status.HTTP_200_OK,
-        'message': 'Datos listados Correctamente',
-        'status': True,
-        'data': serializer.data
-    }
-    return Response(response_data)
     
+    data = []
+    for item in queryset:
+        serializer = AnthropometricSerializer(item)
+        person_id = serializer.data['athlete']  # Remover el ID de la persona del objeto
+        atleta = Athlete.objects.get(id=person_id)
+        item_data = serializer.data
+        item_data['athlete'] = f"{atleta.people.name} {atleta.people.last_name}"  # Añadir el nombre de la persona
+        data.append(item_data)
 
+    responde_data = {
+            'code': status.HTTP_200_OK,
+            'status': False,
+            'message': 'Datos encontrados exitosamente',
+            'data': data
+        }
 
-    #METODO POST (AGREGAR)
+    return Response (responde_data)
+    
 @api_view(['POST'])
 def create_anthro(request):
     serializer_create = AnthropometricSerializer(data=request.data)
     serializer_create.is_valid(raise_exception=True)
-    validated_data = serializer_create.validated_data
 
-    anthropometric = validated_data['anthropometric']
-    
-    if Anthropometric.objects.filter(anthropometric=anthropometric).exists():
-        return Response(
-            data={'code': status.HTTP_200_OK, 
-                  'message': 'Ya existe un registro para esta fecha', 
-                  'status': False,
-                  'data': None
-                  })
+    # Validaciones para campos individuales
+    if serializer_create.validated_data['arm'] < 0:
+        return Response({
+            'code': status.HTTP_200_OK,
+            'message': 'El valor del campo "arm" no puede ser negativo',
+            'status': False,
+            'data': None
+        })
+
+    if not 0 < len(serializer_create.validated_data['chest']) <= 45:
+        return Response({
+            'code': status.HTTP_200_OK,
+            'message': 'El campo "chest" debe tener entre 1 y 45 caracteres',
+            'status': False,
+            'data': None
+        })
+
+    if serializer_create.validated_data['hip'] < 0:
+        return Response({
+            'code': status.HTTP_200_OK,
+            'message': 'El valor del campo "hip" no puede ser negativo',
+            'status': False,
+            'data': None
+        })
+
+    if serializer_create.validated_data['twin'] < 0:
+        return Response({
+            'code': status.HTTP_200_OK,
+            'message': 'El valor del campo "twin" no puede ser negativo',
+            'status': False,
+            'data': None
+        })
+
+    if serializer_create.validated_data['humerus'] < 0:
+        return Response({
+            'code': status.HTTP_200_OK,
+            'message': 'El valor del campo "humerus" no puede ser negativo',
+            'status': False,
+            'data': None
+        })
+
+    if serializer_create.validated_data['femur'] < 0:
+        return Response({
+            'code': status.HTTP_200_OK,
+            'message': 'El valor del campo "femur" no puede ser negativo',
+            'status': False,
+            'data': None
+        })
+
+    if serializer_create.validated_data['wrist'] < 0:
+        return Response({
+            'code': status.HTTP_200_OK,
+            'message': 'El valor del campo "wrist" no puede ser negativo',
+            'status': False,
+            'data': None
+        })
+
+    if serializer_create.validated_data['triceps'] < 0:
+        return Response({
+            'code': status.HTTP_200_OK,
+            'message': 'El valor del campo "triceps" no puede ser negativo',
+            'status': False,
+            'data': None
+        })
+
+    if serializer_create.validated_data['supraspinal'] < 0:
+        return Response({
+            'code': status.HTTP_200_OK,
+            'message': 'El valor del campo "supraspinal" no puede ser negativo',
+            'status': False,
+            'data': None
+        })
+
+    if serializer_create.validated_data['pectoral'] < 0:
+        return Response({
+            'code': status.HTTP_200_OK,
+            'message': 'El valor del campo "pectoral" no puede ser negativo',
+            'status': False,
+            'data': None
+        })
+
+    if serializer_create.validated_data['zise'] < 0:
+        return Response({
+            'code': status.HTTP_200_OK,
+            'message': 'El valor del campo "zise" no puede ser negativo',
+            'status': False,
+            'data': None
+        })
+
+    if serializer_create.validated_data['weight'] < 0:
+        return Response({
+            'code': status.HTTP_200_OK,
+            'message': 'El valor del campo "weight" no puede ser negativo',
+            'status': False,
+            'data': None
+        })
+
+    if serializer_create.validated_data['bmi'] < 0:
+        return Response({
+            'code': status.HTTP_200_OK,
+            'message': 'El valor del campo "bmi" no puede ser negativo',
+            'status': False,
+            'data': None
+        })
 
     serializer_create.save()
 
@@ -102,6 +203,10 @@ def create_anthro(request):
         'data': None
     }
     return Response(response_data)
+
+
+
+
 
 @api_view(['PATCH'])
 def update_anthro(request, pk):
@@ -152,6 +257,3 @@ def delete_anthro(request, pk):
     }
     
     return Response(data=response_data)
-
-
-
