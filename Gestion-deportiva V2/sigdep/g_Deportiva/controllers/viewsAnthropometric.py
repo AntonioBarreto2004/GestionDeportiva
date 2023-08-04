@@ -12,14 +12,14 @@ def list_anthro(request):
     arm = request.GET.get('arm')
     chest = request.GET.get('chest')
     hip = request.GET.get('hip')
-    calf = request.GET.get('calf')
+    twin = request.GET.get('twin')
     humerus = request.GET.get('humerus')
     femur = request.GET.get('femur')
     wrist = request.GET.get('wrist')
     triceps = request.GET.get('triceps')
-    suprailiac = request.GET.get('suprailiac')
+    supraspinal = request.GET.get('supraspinal')
     pectoral = request.GET.get('pectoral')
-    height = request.GET.get('height')
+    zise = request.GET.get('zise')
     weight = request.GET.get('weight')
     bmi = request.GET.get('bmi')
 
@@ -28,33 +28,33 @@ def list_anthro(request):
     if athlete_id:
         queryset = queryset.filter(athlete_id=athlete_id)
     if control_date:
-        queryset = queryset.filter(atpt_controlDate=control_date)
+        queryset = queryset.filter(controlDate=control_date)
     if arm:
-        queryset = queryset.filter(atpt_arm=arm)
+        queryset = queryset.filter(arm=arm)
     if chest:
-        queryset = queryset.filter(atpt_chest=chest)
+        queryset = queryset.filter(chest=chest)
     if hip:
-        queryset = queryset.filter(atpt_hip=hip)
-    if calf:
-        queryset = queryset.filter(atpt_calf=calf)
+        queryset = queryset.filter(hip=hip)
+    if twin:
+        queryset = queryset.filter(twin=twin)
     if humerus:
-        queryset = queryset.filter(atpt_humerus=humerus)
+        queryset = queryset.filter(humerus=humerus)
     if femur:
-        queryset = queryset.filter(atpt_femur=femur)
+        queryset = queryset.filter(femur=femur)
     if wrist:
-        queryset = queryset.filter(atpt_wrist=wrist)
+        queryset = queryset.filter(wrist=wrist)
     if triceps:
-        queryset = queryset.filter(atpt_triceps=triceps)
-    if suprailiac:
-        queryset = queryset.filter(atpt_suprailiac=suprailiac)
+        queryset = queryset.filter(triceps=triceps)
+    if supraspinal:
+        queryset = queryset.filter(supraspinal=supraspinal)
     if pectoral:
-        queryset = queryset.filter(atpt_pectoral=pectoral)
-    if height:
-        queryset = queryset.filter(atpt_height=height)
+        queryset = queryset.filter(pectoral=pectoral)
+    if zise:
+        queryset = queryset.filter(zise=zise)
     if weight:
-        queryset = queryset.filter(atpt_weight=weight)
+        queryset = queryset.filter(weight=weight)
     if bmi:
-        queryset = queryset.filter(atpt_bmi=bmi)
+        queryset = queryset.filter(bmi=bmi)
 
 
     if not queryset.exists():
@@ -141,7 +141,7 @@ def delete_anthro(request, pk):
             'data': None
         })
     
-    athlete_name = anthrop.athlete_id.at_user.name
+    athlete_name = anthrop.athlete.people.name
     anthrop.delete()
     
     response_data ={

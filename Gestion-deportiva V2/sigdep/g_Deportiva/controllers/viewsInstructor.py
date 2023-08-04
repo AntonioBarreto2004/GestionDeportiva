@@ -31,11 +31,19 @@ def list_instructors(request):
         
         serializer_instructor = InstructorSerializer(queryset, many=True)
 
+        data = []
+        for item in serializer_instructor.data:
+            person_id = item.pop('people')  # Remover el ID de la persona del objeto
+            instructor = People.objects.get(id=person_id)
+            item['Instructor'] = f"{instructor.name} {instructor.last_name}"  # Añadir el nombre de la persona
+
+        data.append(item)
+
         responde_data = {
                 'code': status.HTTP_200_OK,
                 'status': False,
                 'message': 'Datos encontrados exitosamente',
-                'data': serializer_instructor.data
+                'data': data
             }
 
         return Response (responde_data)

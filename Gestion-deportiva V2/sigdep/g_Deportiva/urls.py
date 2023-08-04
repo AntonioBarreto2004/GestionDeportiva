@@ -11,6 +11,7 @@ from g_Deportiva.controllers import viewsInstructor
 from g_Deportiva.controllers import viewsAnthropometric
 from g_Deportiva.controllers import viewsCompareChanges
 from g_Deportiva.controllers import viewsCategory
+from g_Deportiva.controllers import viewsAthlete
 from g_Deportiva import views
 
 urlpatterns = [
@@ -59,6 +60,14 @@ urlpatterns = [
     path('compare-changes/', viewsCompareChanges.compare_changes, name='Compare Changes'),
 
     path('list-category/', viewsCategory.list_category, name='list Category'),
+    path('create-category/', viewsCategory.create_category, name='create Category'),
+    path('update-category/<int:pk>/', viewsCategory.update_category, name='update Category'),
+    path('delete-category/<int:pk>/', viewsCategory.delete_category, name='delete Category'),
+
+    path('list-athlete/', viewsAthlete.list_athlete, name='List Athlete'),
+    path('create-athlete/', viewsAthlete.create_athlete, name='Create Athlete'),
+    path('update-athlete/<int:pk>/', viewsAthlete.update_athlete, name='Update Athlete'),
+    path('dalete-athlete/<int:pk>/', viewsAthlete.delete_athlete, name='Delete Athlete'),
 
     path('login/', views.custom_login, name='Login'),
     path('reset-password/', viewsRestPassword.reset_password, name='reset_Password'),

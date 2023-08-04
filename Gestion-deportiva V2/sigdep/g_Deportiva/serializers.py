@@ -78,11 +78,6 @@ class TeamSerializer(serializers.ModelSerializer):
         fields = ('instructors', 'sport','team_name',  'team_image', 'description', 'date_create_team')
 
 class InstructorSerializer(serializers.ModelSerializer):
-    people = serializers.SerializerMethodField()
-
-    def get_people(self, obj):
-        # Obtener el nombre de la persona
-        return f"{obj.people.name} {obj.people.last_name}"
     class Meta:
         model = Instructors
         fields = ('id','people', 'specialization', 'experience_years')
@@ -94,6 +89,14 @@ class AnthropometricSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class CategorySerializer(serializers.ModelSerializer):
+
     class Meta:
         model = Category
-        fiedls = ('id', 'sport', 'category_type', 'category_name', 'date_create_category')
+        fields = ('id', 'sport', 'category_type', 'category_name', 'date_create_category')
+
+    
+class AthleteSerializer(serializers.ModelSerializer):
+    
+    class Meta:
+        model = Athlete
+        fields = ('id', 'instructor', 'people', 'sports', 'technicalv', 'tacticalv', 'physicalv', 'athlete_status')

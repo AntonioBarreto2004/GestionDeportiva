@@ -1,7 +1,5 @@
-import json
 import re
 from django.conf import settings
-from django.db import transaction
 from rest_framework.decorators import api_view
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
@@ -9,7 +7,7 @@ from django.utils.html import strip_tags
 from rest_framework.response import Response
 from rest_framework import status
 from django.utils import timezone
-from django_filters import rest_framework as filters
+
 
 from ..models import *
 from ..serializers import *
@@ -27,7 +25,6 @@ def list_users(request):
         type_document_id = request.query_params.get('type_document_id')
         num_document = request.query_params.get('num_document')
         rol = request.query_params.get('rol')
-
         # Crear un diccionario con los parámetros de consulta que se proporcionaron
         filters = {}
         if email:
@@ -48,10 +45,8 @@ def list_users(request):
             filters['num_document'] = num_document
         if rol:
             filters['users__rol__name_rol__icontains'] = rol
-
         # Obtener todos los objetos People que coincidan con los parámetros de consulta
         people = People.objects.filter(**filters)
-
         # Comprobar si hay datos
         if not people:
             return Response(
@@ -60,9 +55,7 @@ def list_users(request):
                     'status': False, 
                     'message': 'No hay datos disponibles',
                     'data': None
-                }
-            )
-
+                })
         # Serializar los objetos People y obtener los usuarios y nombres de rol asociados
         people_data = []
         for person in people:
@@ -80,12 +73,8 @@ def list_users(request):
                 'code': status.HTTP_200_OK, 
                 'status': True, 
                 'message': 'Listado de usuarios y personas obtenido exitosamente',
-                'data': {
-                    'people': people_data
-                }
-            }
-        )
-
+                'data': {'people': people_data}
+                })
     except Exception as e:
         data = {
             'code': status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -94,8 +83,6 @@ def list_users(request):
             'data': None
         }
         return Response(data)
-
-
 # Envío de correo al crear usuario
 def send_activation_email(user_name, user_email, password):
     subject = 'Bienvenido al Sistema SigDep'
@@ -115,7 +102,8 @@ def create_user(request):
 
     # Validar que los campos requeridos no estén vacíos
     empty_fields = []
-    required_fields = ['email', 'name', 'last_name', 'num_document']
+    required_fields = ['email', 'name', 'last_name', 'num_document', 'birthdate', 
+                       'telephone_number', 'type_document_id', 'gender']
     for field in required_fields:
         if not people_data.get(field):
             empty_fields.append(field)
@@ -126,11 +114,8 @@ def create_user(request):
                 'code': status.HTTP_200_OK,
                 'message': 'Los siguientes campos no pueden estar vacíos',
                 'status': False,
-                'data': f'{empty_fields}, Entre Otros'
-            },
-            status=status.HTTP_200_OK
-        )
-
+                'data': f'{empty_fields}'
+            })
     # Realizar verificación adicional para evitar usuarios duplicados
     email = people_data['email']
     num_document = people_data['num_document']
@@ -142,9 +127,7 @@ def create_user(request):
                 'message': 'Ya existe un usuario con este correo registrado',
                 'status': False,
                 'data': None
-            },
-            status=status.HTTP_200_OK
-        )
+            })
 
     if People.objects.filter(num_document=num_document).exists():
         return Response(
@@ -153,9 +136,7 @@ def create_user(request):
                 'message': 'Ya existe un usuario con este número de documento',
                 'status': False,
                 'data': None
-            },
-            status=status.HTTP_200_OK
-        )
+            })
 
     # Validar nombre y apellido
     name = people_data['name']
@@ -202,9 +183,22 @@ def create_user(request):
         return Response(response_data)
 
     # Paso 1: Crear la instancia de People
+    rol_field = user_data.get('rol')
+    if not rol_field:
+        rol_options = Rol.objects.all()
+        rol_serializer = RolSerializer(rol_options, many=True)
+        # Agregar las opciones disponibles a la respuesta
+        response_data = {
+            'code': status.HTTP_200_OK,
+            'status': True,
+            'message': 'Roles Disponibles',
+            'data': {
+            'rol_options': rol_serializer.data},
+        }
+        return Response(response_data)
+    
     allergies_field = people_data.get('allergies')
     disabilities_field = people_data.get('disabilities')
-
     # Verificar si allergies y disabilities son 0 y tratarlos como nulos
     if allergies_field == 0:
         people_data.pop('allergies', None)
@@ -227,7 +221,8 @@ def create_user(request):
             'status': True,
             'message': 'Alergias y Discapacidades Disponibles, en caso de no tener por favor poner el valor 0 sin comillas',
             'data': {'allergies_options': allergy_serializer.data,
-            'disabilities_options': disability_serializer.data,},
+            'disabilities_options': disability_serializer.data,
+            },
         }
 
         return Response(response_data)
