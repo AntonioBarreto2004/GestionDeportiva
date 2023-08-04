@@ -6,6 +6,10 @@ from rest_framework.response import Response
 from ..serializers import *
 from ..models import *
 
+
+#ATHLETE
+
+        #METODO GET (LISTAR)
 @api_view(['GET'])
 def list_athlete(request):
     class filter_athlete(filters.FilterSet):
@@ -46,8 +50,8 @@ def list_athlete(request):
         person = People.objects.get(id=person_id)
         item['person'] = f"{person.name} {person.last_name}"  # Añadir el nombre de la persona
 
-        sport_id = item.pop('sports')  # Remover el ID del deporte del objeto
-        sport = Sports.objects.get(id=sport_id)
+        Athlete_id = item.pop('sports')  # Remover el ID del deporte del objeto
+        sport = Sports.objects.get(id=Athlete_id)
         item['sport'] = sport.sport_name  # Añadir el nombre del deporte
 
         data.append(item)
@@ -64,6 +68,27 @@ def list_athlete(request):
     
 @api_view(['POST'])
 def create_athlete(request):
+    data = request.data
+    atleta_data = data.get('people')
+
+    empty_fields = []
+
+    required_fields = ['people', 'instructor', 'technicalv', 'tacticalv', 'physicalv', 'sports']
+
+    for field in required_fields:
+        if field not in data or data[field] == "":
+            empty_fields.append(field)
+
+    if empty_fields:
+        response_data = {
+            'code': status.HTTP_400_BAD_REQUEST,
+            'status': False,
+            'message': 'Los siguientes campos son requeridos o están vacíos:',
+            'data': format(', '.join(empty_fields))
+        }
+        return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
+
+    person_id = data['people']
     person_id = request.data.get('people')
 
     if Athlete.objects.filter(people_id=person_id).exists():
@@ -91,7 +116,7 @@ def create_athlete(request):
     except People.DoesNotExist:
         return Response(
             data={
-                'code': status.HTTP_200_OK,
+                'code': status.HTTP_400_BAD_REQUEST,
                 'status': False,
                 'message': 'La persona no existe.',
                 'data': None
@@ -101,11 +126,11 @@ def create_athlete(request):
     instructor_id = request.data.get('instructor')
     if not instructor_id:
         return Response({
-            'code': status.HTTP_200_OK,
+            'code': status.HTTP_400_BAD_REQUEST,
             'status': False,
             'message': 'El campo instructor es requerido.',
             'data': None
-        }, status=status.HTTP_200_OK)
+        }, status=status.HTTP_400_BAD_REQUEST)
 
     try:
         instructor = Instructors.objects.get(id=instructor_id)
@@ -131,7 +156,6 @@ def create_athlete(request):
 
 
 
-
 @api_view(['PATCH'])
 def update_athlete(request, pk):
     try:
@@ -147,7 +171,6 @@ def update_athlete(request, pk):
         
         serializer = AthleteSerializer(athlete, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
-        
         serializer.save()
         
         response_data ={
@@ -157,6 +180,14 @@ def update_athlete(request, pk):
             'data': None
         }
         return Response(response_data)
+    except requests.exceptions.ConnectionError:
+        data={
+            'code': status.HTTP_400_BAD_REQUEST,
+            'status': False,
+            'message': 'La URL se ha perdido. Por favor, inténtalo más tarde.', 
+            'data': None
+                  }
+        return Response(data)
     
     except Exception as e:
         data= {
@@ -187,12 +218,20 @@ def delete_athlete(request, pk):
         athlete.delete()
         
         response_data ={
-            'code': status.HTTP_200_OK,
+            'code': status.HTTP_204_NO_CONTENT,
             'message': f'Datos de {athlete_name} eliminados exitosamente',
             'status': True,
             'data': None
         }
-        return Response(data=response_data)
+        return Response(data=response_data, status=status.HTTP_204_NO_CONTENT)
+    except requests.exceptions.ConnectionError:
+        data={
+            'code': status.HTTP_400_BAD_REQUEST,
+            'status': False,
+            'message': 'La URL se ha perdido. Por favor, inténtalo más tarde.', 
+            'data': None
+                  }
+        return Response(data)
     
     except Exception as e:
         data= {
@@ -202,3 +241,86 @@ def delete_athlete(request, pk):
             'data': None
                     }
         return Response(data)
+    
+    
+@api_view(['POST'])
+def state_atlete(request):
+    try:
+        # Obtener los datos del cuerpo de la solicitud
+        Athlete_id = request.data.get('Athlete_id')
+        action = request.data.get('action')
+
+        campos_faltantes = []
+        # Verificar si los campos están vacíos
+        if not Athlete_id:
+            campos_faltantes.append('"Athlete_id": id del Atleta existente')
+        if not action:
+            campos_faltantes.append('"action": Debe proporcionar un valor (activate o desactivate).')
+
+        if campos_faltantes:
+            # Si el campo "action" está vacío, devolver una respuesta informando que debe proporcionar un valor
+            return Response(
+                data={
+                    'code': status.HTTP_200_OK,
+                    'status': False,
+                    'message': 'Debe proporcionar un valor en los campos',
+                    'data': campos_faltantes
+                })
+        # Verificar si el Atleta existe
+        try:
+            athlete = Athlete.objects.get(id=Athlete_id)
+        except Athlete.DoesNotExist:
+            return Response(
+                data={
+                    'code': status.HTTP_200_OK,
+                    'status': False,
+                    'message': 'El Atleta no existe.',
+                    'data': None
+                })
+        # Realizar la acción según el valor de "action"
+        if action == "desactivate":
+            # Desactivar el Atleta  si aún está activo
+            if athlete.athlete_status:
+                athlete.athlete_status = False
+                athlete.save()
+                message = 'Atleta desactivado exitosamente.'
+            else:
+                message = 'El Atleta ya está desactivado.'
+
+        elif action == "activate":
+            # Activar el deporte si está desactivado
+            if not athlete.athlete_status:
+                athlete.athlete_status = True
+                athlete.save()
+                message = 'Atleta activado exitosamente.'
+            else:
+                message = 'El Atleta  ya está activado.'
+
+        else:
+            # Si se proporciona un valor incorrecto para "action"
+            return Response(
+                data={
+                    'code': status.HTTP_200_OK,
+                    'status': False,
+                    'message': 'El valor del campo "action" es incorrecto. Debe ser "activate" o "desactivate".',
+                    'data': None
+                })
+
+        return Response(
+            data={
+                'code': status.HTTP_200_OK,
+                'status': True,
+                'message': message,
+                'data': None
+            },
+            status=status.HTTP_200_OK
+        )
+
+    except Exception as e:
+        data = {
+            'code': status.HTTP_500_INTERNAL_SERVER_ERROR,
+            'status': False,
+            'message': 'Error del servidor',
+            'data': None
+        }
+        return Response(data, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

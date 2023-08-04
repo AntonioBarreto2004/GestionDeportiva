@@ -67,7 +67,8 @@ urlpatterns = [
     path('list-athlete/', viewsAthlete.list_athlete, name='List Athlete'),
     path('create-athlete/', viewsAthlete.create_athlete, name='Create Athlete'),
     path('update-athlete/<int:pk>/', viewsAthlete.update_athlete, name='Update Athlete'),
-    path('dalete-athlete/<int:pk>/', viewsAthlete.delete_athlete, name='Delete Athlete'),
+    path('delete-athlete/<int:pk>/', viewsAthlete.delete_athlete, name='Delete Athlete'),
+    path('athlete-state/', viewsAthlete.state_atlete, name='status atleta'),
 
     path('login/', views.custom_login, name='Login'),
     path('reset-password/', viewsRestPassword.reset_password, name='reset_Password'),
