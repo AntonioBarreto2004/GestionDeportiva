@@ -99,25 +99,7 @@ class CategorySerializer(serializers.ModelSerializer):
         fiedls = ('id', 'sport', 'category_type', 'category_name', 'date_create_category')
 
 class AthleteSerializer(serializers.ModelSerializer):
-    people = serializers.SerializerMethodField()
-    instructor_id = serializers.SerializerMethodField()
-    sports = serializers.SerializerMethodField()
-
-    def get_people(self, obj):
-        # Obtener el nombre de la persona
-        return f"{obj.people.name} {obj.people.last_name}"
-    
-    def get_instructor(self, obj):
-        # Obtener el nombre del instructor
-        if obj.instructor:
-            return f"{obj.instructor.people.name} {obj.instructor.people.last_name}"
-
-
-    def get_sports(self, obj):
-        # Obtener el nombre del deporte
-        if obj.sports:
-            return f"{obj.sports.sport_name}"  # Reemplaza 'name' con el nombre real del campo que contiene el nombre del deporte
     
     class Meta:
         model = Athlete
-        fields = ('id', 'instructor_id', 'people', 'sports', 'technicalv', 'tacticalv', 'physicalv', 'athlete_status')
+        fields = ('id', 'instructor', 'people', 'sports', 'technicalv', 'tacticalv', 'physicalv', 'athlete_status')
