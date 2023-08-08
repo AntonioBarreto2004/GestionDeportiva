@@ -1,3 +1,4 @@
+import re
 import requests
 from rest_framework import viewsets, status
 from rest_framework.decorators import api_view
@@ -67,9 +68,35 @@ def create_team(request):
     try:
         serializer = TeamSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-
-        # Obtener el nombre del equipo de la solicitud
+        person_id = request.data.get('instructors')
         team_name = serializer.validated_data['team_name']
+        description = serializer.validated_data['description']
+
+        # Validating the name field
+        if not team_name:
+            return Response({
+                'code': status.HTTP_200_OK,
+                'message': 'Nombre del deporte no puede estar vacío.',
+                'status': False,
+                'data': None
+            })
+
+        if not re.match(r'^[a-zA-Z\s]+$', team_name):
+            return Response({
+                'code': status.HTTP_200_OK,
+                'message': 'Nombre del Equipo solo puede contener letras y espacios.',
+                'status': False,
+                'data': None
+            })
+
+        # Validating the description field
+        if len(description) > 250:
+            return Response({
+                'code': status.HTTP_200_OK,
+                'message': 'La descripción no puede exceder los 250 caracteres.',
+                'status': False,
+                'data': None
+            })
 
         # Verificar si ya existe un equipo con el mismo nombre
         if Team.objects.filter(team_name=team_name).exists():
@@ -80,6 +107,17 @@ def create_team(request):
                 'data': None
             }
             return Response(response_data)
+        
+        user = User.objects.get(instructors=person_id)
+        if user.rol_id != 2:
+            return Response(
+                data={
+                    'code': status.HTTP_200_OK,
+                    'status': False,
+                    'message': 'La persona no tiene el rol de instructor.',
+                    'data': None
+                })
+
 
         # Verificar si el usuario está autenticado
         if not request.user.is_authenticated:
@@ -104,7 +142,7 @@ def create_team(request):
                 return Response(response_data)
         except User.DoesNotExist:
             response_data = {
-                'code': status.HTTP_204_NO_CONTENT,
+                'code': status.HTTP_200_OK,
                 'message': 'El usuario no existe.',
                 'status': False,
                 'data': None
@@ -156,6 +194,18 @@ def update_team(request, pk):
             }
             return Response(responde_data)
         
+        team_name = request.data.get('team_name')
+
+        existing_sport = Sports.objects.filter(team_name=team_name).first()
+        if existing_sport:
+            return Response(
+                data={
+                    'code': status.HTTP_200_OK,
+                    'status': False,
+                    'message': 'Ya existe un Equipo con el mismo nombre.',
+                    'data': None
+                })
+
         serializer = TeamSerializer(team, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
