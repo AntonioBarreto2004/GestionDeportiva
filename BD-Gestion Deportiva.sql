@@ -9,7 +9,7 @@ CREATE TABLE Allergies (
   );
 
 CREATE TABLE disabilities (
-  id INT NULL AUTO_INCREMENT,
+  id INT NULL AUTO_INCREMENT PRIMARY KEY,
   disability_name VARCHAR(45) NOT NULL,
   description TEXT NOT NULL
   );
@@ -37,17 +37,16 @@ CREATE TABLE people (
   file_v VARCHAR(255) NOT NULL,
   file_f VARCHAR(255) NOT NULL,
   modified_at DATETIME NOT NULL,
-  is_instructors TINYINT(4) NULL DEFAULT NULL,
+  is_instructors boolean,
   FOREIGN KEY (Allergies_id) REFERENCES Allergies (id),
   FOREIGN KEY (disabilities_id) REFERENCES disabilities (id)
  );
  
  CREATE TABLE user (
-  id INT(11) NOT NULL AUTO_INCREMENT,
+  id INT(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
   people_id INT(11) NOT NULL,
   rol_id INT(11) NOT NULL,
-  is_staff TINYINT(4) NULL DEFAULT 0,
-  is_active TINYINT(1) NULL DEFAULT 1,
+  is_active boolean,
   password VARCHAR(128) NOT NULL,
   FOREIGN KEY (rol_id) REFERENCES rol (id),
   FOREIGN KEY (people_id) REFERENCES people (id)
@@ -94,6 +93,7 @@ CREATE TABLE team (
 );
 
 CREATE TABLE athlete_team (
+  id INT(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
   athlete_id INT(11) NOT NULL,
   team_id INT(11) NOT NULL,
   dorsal INT(11) NOT NULL,
