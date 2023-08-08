@@ -12,6 +12,7 @@ from g_Deportiva.controllers import viewsAnthropometric
 from g_Deportiva.controllers import viewsCompareChanges
 from g_Deportiva.controllers import viewsCategory
 from g_Deportiva.controllers import viewsAthlete
+from g_Deportiva.controllers import viewsExportPdf
 from g_Deportiva import views
 
 urlpatterns = [
@@ -69,6 +70,8 @@ urlpatterns = [
     path('update-athlete/<int:pk>/', viewsAthlete.update_athlete, name='Update Athlete'),
     path('delete-athlete/<int:pk>/', viewsAthlete.delete_athlete, name='Delete Athlete'),
     path('athlete-state/', viewsAthlete.state_atlete, name='status atleta'),
+
+    path('export-pdf/', viewsExportPdf.export_users_to_pdf, name='export_users'),
 
     path('login/', views.custom_login, name='Login'),
     path('reset-password/', viewsRestPassword.reset_password, name='reset_Password'),

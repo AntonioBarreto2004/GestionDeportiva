@@ -44,7 +44,7 @@ class People(models.Model):
     file_v = models.FileField(upload_to='documents/', blank=True)
     file_f = models.FileField(upload_to='documents/', blank=True)
     modified_at = models.DateTimeField(auto_now_add=True)
-    is_instructors = models.BooleanField(default=False)
+    
 
     def __str__(self):
         return f"{self.name} {self.last_name}"
