@@ -12,56 +12,52 @@ from ..models import *
         #METODO GET (LISTAR)
 @api_view(['GET'])
 def list_athlete(request):
-    class filter_athlete(filters.FilterSet):
-        class Meta:
-            model = Athlete
-            fields = {
-                'id': ['exact'],
-                'instructor': ['exact'],
-                'technicalv': ['exact'],
-                'tacticalv': ['exact'],
-                'physicalv': ['exact'],
-                'sports': ['exact'],
-                'athlete_status': ['exact'],
-            }
+    athletes = Athlete.objects.all()
 
-    queryset = Athlete.objects.all()
-    athlete_filter = filter_athlete(request.query_params, queryset=queryset)
-    filtered_queryset = athlete_filter.qs
+    athlete_data = []
+    for athlete in athletes:
+        try:
+            user = User.objects.get(people=athlete.people)
+            rol_name = user.rol.name_rol if user and user.rol else None
+        except User.DoesNotExist:
+            rol_name = None
 
-    if not filtered_queryset.exists():
-        return Response(
-            data={
-                'code': status.HTTP_200_OK,
-                'message': 'No hay datos registrados',
-                'status': False,
-                'data': None
-            }
-        )
-    serializer = AthleteSerializer(filtered_queryset, many=True)
+        athlete_info = {
+            'name': athlete.people.name,
+            'last_name': athlete.people.last_name,
+            'email': athlete.people.email,
+            'photo_user': athlete.people.photo_user.url if athlete.people.photo_user else None,
+            'birthdate': athlete.people.birthdate,
+            'gender': athlete.people.gender,
+            'telephone_number': athlete.people.telephone_number,
+            'type_document_id': athlete.people.type_document_id,
+            'num_document': athlete.people.num_document,
+            'allergies': athlete.people.allergies.allergie_name if athlete.people.allergies else None,
+            'disabilities': athlete.people.disabilities.disability_name if athlete.people.disabilities else None,
+            'file_documentidentity': athlete.people.file_documentidentity.url if athlete.people.file_documentidentity else None,
+            'file_v': athlete.people.file_v.url if athlete.people.file_v else None,
+            'file_f': athlete.people.file_f.url if athlete.people.file_f else None,
+            'modified_at': athlete.people.modified_at,
+            'sport': athlete.sports.sport_name,
+            'rol': rol_name,
+        }
+        athlete_data.append(athlete_info)
 
-    data = []
-    for item in serializer.data:
-        instructor_id = item.pop('instructor')  # Remover el ID del instructor del objeto
-        instructor = Instructors.objects.get(id=instructor_id)
-        item['instructor'] = f"{instructor.people.name} {instructor.people.last_name}"  # Añadir el nombre del instructor
+    if not athlete_data:
+        response_data = {
+            'code': status.HTTP_200_OK,
+            'status': False,
+            'message': 'No se encontraron instructores o personas asociadas',
+            'data': []
+        }
+    else:
+        response_data = {
+            'code': status.HTTP_200_OK,
+            'status': True,
+            'message': 'Consulta realizada exitosamente',
+            'data': athlete_data
+        }
 
-        person_id = item.pop('people')  # Remover el ID de la persona del objeto
-        person = People.objects.get(id=person_id)
-        item['person'] = f"{person.name} {person.last_name}"  # Añadir el nombre de la persona
-
-        Athlete_id = item.pop('sports')  # Remover el ID del deporte del objeto
-        sport = Sports.objects.get(id=Athlete_id)
-        item['sport'] = sport.sport_name  # Añadir el nombre del deporte
-
-        data.append(item)
-
-    response_data = {
-        'code': status.HTTP_200_OK,
-        'message': 'Lista de Atletas exitosa',
-        'status': True,
-        'data': data
-    }
     return Response(response_data)
 
 

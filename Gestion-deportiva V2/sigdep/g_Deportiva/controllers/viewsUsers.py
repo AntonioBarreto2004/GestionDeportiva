@@ -14,7 +14,6 @@ from ..serializers import *
 
 @api_view(['GET'])
 def list_users(request):
-    try:
         # Obtener los parámetros de consulta
         email = request.query_params.get('email')
         name = request.query_params.get('name')
@@ -75,14 +74,6 @@ def list_users(request):
                 'message': 'Listado de usuarios y personas obtenido exitosamente',
                 'data': {'people': people_data}
                 })
-    except Exception as e:
-        data = {
-            'code': status.HTTP_500_INTERNAL_SERVER_ERROR,
-            'status': False,
-            'message': 'Error del servidor',
-            'data': None
-        }
-        return Response(data)
     
 # Envío de correo al crear usuario
 def send_activation_email(user_name, user_email, password):

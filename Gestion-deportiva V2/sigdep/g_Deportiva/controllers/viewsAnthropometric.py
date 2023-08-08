@@ -136,7 +136,6 @@ def create_anthro(request):
     }
     return Response(response_data)
 
-
 @api_view(['PATCH'])
 def update_anthro(request, pk):
     try:
@@ -161,7 +160,6 @@ def update_anthro(request, pk):
     }
     
     return Response(data=response_data)
-
 
     #METODO DELETE (ELIMINAR)
 @api_view(['DELETE'])

@@ -7,45 +7,58 @@ from ..serializers import *
 
 @api_view(['GET'])
 def list_instructors(request):
-        instructors_p = request.GET.get('people', '')
-        experience_years = request.GET.get('experience_years', '')
+    instructors = Instructors.objects.all()
 
-        queryset = Instructors.objects.all()
+    instructor_data = []
+    for instructor in instructors:
+        try:
+            user = User.objects.get(people=instructor.people)
+            rol_name = user.rol.name_rol if user and user.rol else None
+        except User.DoesNotExist:
+            rol_name = None
 
-        if instructors_p:
-            queryset = queryset.filter(instructors_p__icontains=instructors_p)
+        instructor_info = {
+            'name': instructor.people.name,
+            'last_name': instructor.people.last_name,
+            'rol': rol_name,
+            'email': instructor.people.email,
+            'photo_user': instructor.people.photo_user.url if instructor.people.photo_user else None,
+            'birthdate': instructor.people.birthdate,
+            'gender': instructor.people.gender,
+            'telephone_number': instructor.people.telephone_number,
+            'type_document': instructor.people.type_document_id,
+            'num_document': instructor.people.num_document,
+            'allergies': instructor.people.allergies.allergie_name if instructor.people.allergies else None,
+            'disabilities': instructor.people.disabilities.disability_name if instructor.people.disabilities else None,
+            'specialization': instructor.specialization,
+            'experience_years': instructor.experience_years,
+            'file_documentidentity': instructor.people.file_documentidentity.url if instructor.people.file_documentidentity else None,
+            'file_v': instructor.people.file_v.url if instructor.people.file_v else None,
+            'file_f': instructor.people.file_f.url if instructor.people.file_f else None,
+            'modified_at': instructor.people.modified_at,
+            
+        }
+        instructor_data.append(instructor_info)
 
-        if experience_years:
-            queryset = queryset.filter(experience_years__icontains=experience_years)
-
-        if not queryset.exists():
-            response_data = {
-                'code': status.HTTP_200_OK,
-                'status': False,
-                'message': 'No hay datos registrados',
-                'data': None
-            }
-            return Response(response_data)
-
-        data = []
-
-        for item in queryset:
-            serializer_instructor = InstructorSerializer(item)
-            person_id = serializer_instructor.data['people']
-            instructor = People.objects.get(id=person_id)  # Asegúrate de importar el modelo People
-            item_data = serializer_instructor.data
-            item_data['Instructor'] = f"{instructor.name} {instructor.last_name}"
-            data.append(item_data)
-
+    if not instructor_data:
+        response_data = {
+            'code': status.HTTP_200_OK,
+            'status': False,
+            'message': 'No se encontraron instructores o personas asociadas',
+            'data': []
+        }
+    else:
         response_data = {
             'code': status.HTTP_200_OK,
             'status': True,
-            'message': 'Datos encontrados exitosamente',
-            'data': data
+            'message': 'Consulta realizada exitosamente',
+            'data': instructor_data
         }
 
-        return Response(response_data)
-    
+    return Response(response_data)
+
+
+
 
 @api_view(['POST'])
 def create_instructor(request):

@@ -52,7 +52,7 @@ class PeopleSerializer(serializers.ModelSerializer):
         model = People
         fields = ['id','user', 'name', 'last_name', 'email', 'photo_user', 'birthdate', 'gender', 'telephone_number',
                   'type_document_id', 'num_document', 'allergies', 'disabilities', 'file_documentidentity',
-                  'file_v', 'file_f', 'modified_at', 'is_instructors', 'rol_name']
+                  'file_v', 'file_f', 'modified_at', 'rol_name']
 
     def create(self, validated_data):
         user_data = validated_data.pop('user', None)  # Si no se proporciona 'user', establecer como None
@@ -78,9 +78,11 @@ class TeamSerializer(serializers.ModelSerializer):
         fields = ('instructors', 'sport','team_name',  'team_image', 'description', 'date_create_team')
 
 class InstructorSerializer(serializers.ModelSerializer):
+    people = serializers.StringRelatedField()
+
     class Meta:
         model = Instructors
-        fields = ('id','people', 'specialization', 'experience_years')
+        fields = ['id', 'people', 'specialization', 'experience_years']
 
 
 class AnthropometricSerializer(serializers.ModelSerializer):
@@ -88,6 +90,7 @@ class AnthropometricSerializer(serializers.ModelSerializer):
         model = Anthropometric
         fields = ('id', 'athlete', 'controlDate', 'arm', 'chest', 'hip', 'twin', 'humerus', 'femur',
                   'wrist', 'triceps', 'supraspinal', 'pectoral', 'zise', 'weight', 'bmi', 'updated_date')
+        
 class CategorySerializer(serializers.ModelSerializer):
 
     class Meta:
