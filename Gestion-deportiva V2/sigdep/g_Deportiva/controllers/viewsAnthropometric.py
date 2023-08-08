@@ -1,5 +1,5 @@
 from rest_framework import status
-from datetime import datetime
+from datetime import datetime, timedelta
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from ..serializers import *
@@ -80,6 +80,9 @@ def create_anthro(request):
     # Calcula la fecha actual
     current_date = datetime.now().date()
 
+    # Calcula la fecha hace 90 días
+    min_date = current_date - timedelta(days=90)
+
     # Verifica si ya existe un registro para el atleta en la misma fecha
     existing_record = Anthropometric.objects.filter(athlete_id=athlete_id, controlDate=current_date).exists()
 
@@ -87,6 +90,17 @@ def create_anthro(request):
         return Response({
             'code': status.HTTP_200_OK,
             'message': 'Ya se ha registrado un antropométrico para este atleta hoy',
+            'status': False,
+            'data': None
+        })
+
+    # Verifica si hay registros en los últimos 90 días
+    recent_record = Anthropometric.objects.filter(athlete_id=athlete_id, controlDate__gte=min_date).exists()
+
+    if not recent_record:
+        return Response({
+            'code': status.HTTP_200_OK,
+            'message': 'Debe pasar al menos 90 días antes de registrar otro antropométrico',
             'status': False,
             'data': None
         })
@@ -122,6 +136,7 @@ def create_anthro(request):
     }
     return Response(response_data)
 
+
 @api_view(['PATCH'])
 def update_anthro(request, pk):
     try:
@@ -146,6 +161,7 @@ def update_anthro(request, pk):
     }
     
     return Response(data=response_data)
+
 
     #METODO DELETE (ELIMINAR)
 @api_view(['DELETE'])
