@@ -12,57 +12,91 @@ from ..models import *
         #METODO GET (LISTAR)
 @api_view(['GET'])
 def list_athlete(request):
-    class filter_athlete(filters.FilterSet):
-        class Meta:
-            model = Athlete
-            fields = {
-                'id': ['exact'],
-                'instructor': ['exact'],
-                'technicalv': ['exact'],
-                'tacticalv': ['exact'],
-                'physicalv': ['exact'],
-                'sports': ['exact'],
-                'athlete_status': ['exact'],
-            }
+    athletes = Athlete.objects.all()
 
-    queryset = Athlete.objects.all()
-    athlete_filter = filter_athlete(request.query_params, queryset=queryset)
-    filtered_queryset = athlete_filter.qs
+    athlete_data = []
+    for athlete in athletes:
+        try:
+            user = User.objects.get(people=athlete.people)
+            rol_name = user.rol.name_rol if user and user.rol else None
+        except User.DoesNotExist:
+            rol_name = None
 
-    if not filtered_queryset.exists():
-        return Response(
-            data={
-                'code': status.HTTP_200_OK,
-                'message': 'No hay datos registrados',
-                'status': False,
-                'data': None
-            }
-        )
-    serializer = AthleteSerializer(filtered_queryset, many=True)
+        allergies_data = []
+        disabilities_data = []
+        special_conditions_data = []
 
-    data = []
-    for item in serializer.data:
-        instructor_id = item.pop('instructor')  # Remover el ID del instructor del objeto
-        instructor = Instructors.objects.get(id=instructor_id)
-        item['instructor'] = f"{instructor.people.name} {instructor.people.last_name}"  # Añadir el nombre del instructor
+        if athlete.people.peopleallergies_set.exists():
+            allergies_data = [
+                {
+                    'id': allergy.allergies.id,
+                    'allergie_name': allergy.allergies.allergie_name,
+                    'description': allergy.allergies.description
+                }
+                for allergy in athlete.people.peopleallergies_set.all()
+            ]
 
-        person_id = item.pop('people')  # Remover el ID de la persona del objeto
-        person = People.objects.get(id=person_id)
-        item['person'] = f"{person.name} {person.last_name}"  # Añadir el nombre de la persona
+        if athlete.people.peopledisabilities_set.exists():
+            disabilities_data = [
+                {
+                    'id': disability.disabilities.id,
+                    'disability_name': disability.disabilities.disability_name,
+                    'description': disability.disabilities.description
+                }
+                for disability in athlete.people.peopledisabilities_set.all()
+            ]
 
-        Athlete_id = item.pop('sports')  # Remover el ID del deporte del objeto
-        sport = Sports.objects.get(id=Athlete_id)
-        item['sport'] = sport.sport_name  # Añadir el nombre del deporte
+        if athlete.people.peoplespecialconditions_set.exists():
+            special_conditions_data = [
+                {
+                    'id': condition.specialConditions.id,
+                    'specialConditions_name': condition.specialConditions.specialConditions_name,
+                    'description': condition.specialConditions.description
+                }
+                for condition in athlete.people.peoplespecialconditions_set.all()
+            ]
 
-        data.append(item)
+        athlete_info = {
+            'id': athlete.people.id,
+            'name': athlete.people.name,
+            'last_name': athlete.people.last_name,
+            'rol': rol_name,
+            'email': athlete.people.email,
+            'sport': athlete.sports.sport_name,
+            'photo_user': athlete.people.photo_user.url if athlete.people.photo_user else None,
+            'birthdate': athlete.people.birthdate,
+            'gender': athlete.people.gender,
+            'telephone_number': athlete.people.telephone_number,
+            'type_document_id': athlete.people.type_document_id,
+            'num_document': athlete.people.num_document,
+            'file_documentidentity': athlete.people.file_documentidentity.url if athlete.people.file_documentidentity else None,
+            'file_v': athlete.people.file_v.url if athlete.people.file_v else None,
+            'file_f': athlete.people.file_f.url if athlete.people.file_f else None,
+            'allergies': allergies_data,
+            'disabilities': disabilities_data,
+            'special_conditions': special_conditions_data,
+            'modified_at': athlete.people.modified_at,
+            
+        }
+        athlete_data.append(athlete_info)
 
-    response_data = {
-        'code': status.HTTP_200_OK,
-        'message': 'Lista de Atletas exitosa',
-        'status': True,
-        'data': data
-    }
+    if not athlete_data:
+        response_data = {
+            'code': status.HTTP_200_OK,
+            'status': False,
+            'message': 'No se encontraron deportistas o personas asociadas',
+            'data': []
+        }
+    else:
+        response_data = {
+            'code': status.HTTP_200_OK,
+            'status': True,
+            'message': 'Consulta realizada exitosamente',
+            'data': athlete_data
+        }
+
     return Response(response_data)
+
 
 
     
@@ -324,4 +358,3 @@ def state_atlete(request):
             'data': None
         }
         return Response(data, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-    

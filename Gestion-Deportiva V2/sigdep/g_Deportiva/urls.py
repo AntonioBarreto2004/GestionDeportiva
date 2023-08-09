@@ -12,13 +12,14 @@ from g_Deportiva.controllers import viewsAnthropometric
 from g_Deportiva.controllers import viewsCompareChanges
 from g_Deportiva.controllers import viewsCategory
 from g_Deportiva.controllers import viewsAthlete
+from g_Deportiva.controllers import viewsExportPdf
 from g_Deportiva import views
 
 urlpatterns = [
     path('list-users/', viewsUsers.list_users, name='list_users'),
     path('create-user/', viewsUsers.create_user, name='create_user'),
     path('update-user/<int:pk>/', viewsUsers.update_user, name='update_user'),
-    path('delete-user/<people_id>/', viewsUsers.delete_user, name='delete_user'),
+    path('delete-user/<int:pk>/', viewsUsers.delete_user, name='delete_user'),
     path('update-photo/<people_id>/', viewsUpdatePhoto.update_profile_photo, name='Update Photo'),
 
     path('list-roles/', viewsRole.list_roles, name='list_roles'),
@@ -52,13 +53,6 @@ urlpatterns = [
     path('update-instructor/<int:pk>/', viewsInstructor.update_instructor, name='Update instructors'),
     path('delete-instructor/<int:pk>/', viewsInstructor.delete_instructor, name='Delete instructors'),
 
-    path('list-athlete/', viewsAthlete.list_athlete, name='List Athlete'),
-    path('create-athlete/', viewsAthlete.create_athlete, name='Create Athlete'),
-    path('update-athlete/<int:pk>/', viewsAthlete.update_athlete, name='Update Athlete'),
-    path('delete-athlete/<int:pk>/', viewsAthlete.delete_athlete, name='Delete Athlete'),
-    path('athlete-state/', viewsAthlete.state_atlete, name='status atleta'),
-
-
     path('list-anthrop/', viewsAnthropometric.list_anthro, name='List Anthropometric'),
     path('create-anthrop/', viewsAnthropometric.create_anthro, name='Create Anthropometric'),
     path('update-anthrop/<int:pk>/', viewsAnthropometric.update_anthro, name='Update Anthropometric'),
@@ -67,6 +61,17 @@ urlpatterns = [
     path('compare-changes/', viewsCompareChanges.compare_changes, name='Compare Changes'),
 
     path('list-category/', viewsCategory.list_category, name='list Category'),
+    path('create-category/', viewsCategory.create_category, name='create Category'),
+    path('update-category/<int:pk>/', viewsCategory.update_category, name='update Category'),
+    path('delete-category/<int:pk>/', viewsCategory.delete_category, name='delete Category'),
+
+    path('list-athlete/', viewsAthlete.list_athlete, name='List Athlete'),
+    path('create-athlete/', viewsAthlete.create_athlete, name='Create Athlete'),
+    path('update-athlete/<int:pk>/', viewsAthlete.update_athlete, name='Update Athlete'),
+    path('delete-athlete/<int:pk>/', viewsAthlete.delete_athlete, name='Delete Athlete'),
+    path('athlete-state/', viewsAthlete.state_atlete, name='status atleta'),
+
+    path('export-pdf/', viewsExportPdf.export_users_to_pdf, name='export_users'),
 
     path('login/', views.custom_login, name='Login'),
     path('reset-password/', viewsRestPassword.reset_password, name='reset_Password'),

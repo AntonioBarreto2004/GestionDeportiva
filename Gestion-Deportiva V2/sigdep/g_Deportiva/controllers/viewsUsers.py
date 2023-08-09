@@ -1,7 +1,5 @@
-import json
 import re
 from django.conf import settings
-from django.db import transaction
 from rest_framework.decorators import api_view
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
@@ -9,14 +7,13 @@ from django.utils.html import strip_tags
 from rest_framework.response import Response
 from rest_framework import status
 from django.utils import timezone
-from django_filters import rest_framework as filters
+
 
 from ..models import *
 from ..serializers import *
 
 @api_view(['GET'])
 def list_users(request):
-    try:
         # Obtener los parámetros de consulta
         email = request.query_params.get('email')
         name = request.query_params.get('name')
@@ -27,7 +24,6 @@ def list_users(request):
         type_document_id = request.query_params.get('type_document_id')
         num_document = request.query_params.get('num_document')
         rol = request.query_params.get('rol')
-
         # Crear un diccionario con los parámetros de consulta que se proporcionaron
         filters = {}
         if email:
@@ -48,10 +44,8 @@ def list_users(request):
             filters['num_document'] = num_document
         if rol:
             filters['users__rol__name_rol__icontains'] = rol
-
         # Obtener todos los objetos People que coincidan con los parámetros de consulta
         people = People.objects.filter(**filters)
-
         # Comprobar si hay datos
         if not people:
             return Response(
@@ -60,9 +54,7 @@ def list_users(request):
                     'status': False, 
                     'message': 'No hay datos disponibles',
                     'data': None
-                }
-            )
-
+                })
         # Serializar los objetos People y obtener los usuarios y nombres de rol asociados
         people_data = []
         for person in people:
@@ -72,6 +64,22 @@ def list_users(request):
             person_data['users'] = user_data
             rol_name = Rol.objects.get(id=user_data['rol']).name_rol if 'rol' in user_data else None
             person_data['users']['rol_name'] = rol_name
+
+            # Obtener alergias asociadas
+            allergies = person.peopleallergies_set.all()
+            allergy_data = [AllergiesSerializer(allergy.allergies).data for allergy in allergies]
+            person_data['allergies'] = allergy_data
+
+            # Obtener discapacidades asociadas
+            disabilities = person.peopledisabilities_set.all()
+            disability_data = [DisabilitiesSerializer(disability.disabilities).data for disability in disabilities]
+            person_data['disabilities'] = disability_data
+
+            # Obtener condiciones especiales asociadas
+            special_conditions = person.peoplespecialconditions_set.all()
+            special_conditions_data = [specialConditionsSerializer(condition.specialConditions).data for condition in special_conditions]
+            person_data['special_conditions'] = special_conditions_data
+
             people_data.append(person_data)
 
         # Devolver la respuesta con la lista de personas y usuarios asociados
@@ -80,22 +88,9 @@ def list_users(request):
                 'code': status.HTTP_200_OK, 
                 'status': True, 
                 'message': 'Listado de usuarios y personas obtenido exitosamente',
-                'data': {
-                    'people': people_data
-                }
-            }
-        )
-
-    except Exception as e:
-        data = {
-            'code': status.HTTP_500_INTERNAL_SERVER_ERROR,
-            'status': False,
-            'message': 'Error del servidor',
-            'data': None
-        }
-        return Response(data)
-
-
+                'data': {'people': people_data}
+                })
+    
 # Envío de correo al crear usuario
 def send_activation_email(user_name, user_email, password):
     subject = 'Bienvenido al Sistema SigDep'
@@ -115,7 +110,8 @@ def create_user(request):
 
     # Validar que los campos requeridos no estén vacíos
     empty_fields = []
-    required_fields = ['email', 'name', 'last_name', 'num_document']
+    required_fields = ['email', 'name', 'last_name', 'num_document', 'birthdate', 
+                       'telephone_number', 'type_document_id', 'gender']
     for field in required_fields:
         if not people_data.get(field):
             empty_fields.append(field)
@@ -126,11 +122,8 @@ def create_user(request):
                 'code': status.HTTP_200_OK,
                 'message': 'Los siguientes campos no pueden estar vacíos',
                 'status': False,
-                'data': f'{empty_fields}, Entre Otros'
-            },
-            status=status.HTTP_200_OK
-        )
-
+                'data': f'{empty_fields}'
+            })
     # Realizar verificación adicional para evitar usuarios duplicados
     email = people_data['email']
     num_document = people_data['num_document']
@@ -142,9 +135,7 @@ def create_user(request):
                 'message': 'Ya existe un usuario con este correo registrado',
                 'status': False,
                 'data': None
-            },
-            status=status.HTTP_200_OK
-        )
+            })
 
     if People.objects.filter(num_document=num_document).exists():
         return Response(
@@ -153,9 +144,7 @@ def create_user(request):
                 'message': 'Ya existe un usuario con este número de documento',
                 'status': False,
                 'data': None
-            },
-            status=status.HTTP_200_OK
-        )
+            })
 
     # Validar nombre y apellido
     name = people_data['name']
@@ -201,43 +190,31 @@ def create_user(request):
         }
         return Response(response_data)
 
-    # Paso 1: Crear la instancia de People
-    allergies_field = people_data.get('allergies')
-    disabilities_field = people_data.get('disabilities')
-
-    # Verificar si allergies y disabilities son 0 y tratarlos como nulos
-    if allergies_field == 0:
-        people_data.pop('allergies', None)
-
-    if disabilities_field == 0:
-        people_data.pop('disabilities', None)
-
-    if allergies_field == "" or disabilities_field == "":
-        # Obtener las opciones disponibles para allergies y disabilities
-        allergy_options = Allergies.objects.all()
-        disability_options = Disabilities.objects.all()
-
-        # Serializar las opciones disponibles para allergies y disabilities
-        allergy_serializer = AllergiesSerializer(allergy_options, many=True)
-        disability_serializer = DisabilitiesSerializer(disability_options, many=True)
-
-        # Agregar las opciones disponibles a la respuesta
-        response_data = {
-            'code': status.HTTP_200_OK,
-            'status': True,
-            'message': 'Alergias y Discapacidades Disponibles, en caso de no tener por favor poner el valor 0 sin comillas',
-            'data': {'allergies_options': allergy_serializer.data,
-            'disabilities_options': disability_serializer.data,},
-        }
-
-        return Response(response_data)
-
-    # Si no están vacíos, continúa con la lógica existente para crear el usuario.
+    # Crear la instancia de People
     people_serializer = PeopleSerializer(data=people_data)
     if people_serializer.is_valid():
         people = people_serializer.save()
     else:
         return Response(people_serializer.errors)
+
+    # Manejar las relaciones muchos a muchos
+    if 'allergies' in people_data:
+        allergies_ids = people_data['allergies']
+        allergies_associated = Allergies.objects.filter(id__in=allergies_ids)
+        for allergy in allergies_associated:
+            peopleAllergies.objects.create(people=people, allergies=allergy)
+
+    if 'disabilities' in people_data:
+        disabilities_ids = people_data['disabilities']
+        disabilities_associated = Disabilities.objects.filter(id__in=disabilities_ids)
+        for disability in disabilities_associated:
+            peopleDisabilities.objects.create(people=people, disabilities=disability)
+
+    if 'special_conditions' in people_data:
+        special_conditions_ids = people_data['special_conditions']
+        special_conditions_associated = specialConditions.objects.filter(id__in=special_conditions_ids)
+        for condition in special_conditions_associated:
+            peoplespecialConditions.objects.create(people=people, specialConditions=condition)
 
     # Paso 2: Crear la instancia de User y asociarlo con People
     if user_data:
@@ -300,7 +277,7 @@ def update_user(request, pk):
         for field in non_updateable_fields:
             if field in request.data:
                 return Response(
-                    data={'code': status.HTTP_400_BAD_REQUEST,
+                    data={'code': status.HTTP_200_OK,
                           'message': f'No se puede actualizar el campo: {field}',
                           'status': False,
                           'data': None
@@ -309,14 +286,12 @@ def update_user(request, pk):
         num_telefono = request.data.get('num_telefono')
         if num_telefono and not re.fullmatch(r'^\d{10}$', num_telefono):
             return Response(
-                data={'code': status.HTTP_400_BAD_REQUEST,
+                data={'code': status.HTTP_200_OK,
                       'message': 'El número de teléfono debe tener exactamente 10 dígitos.',
                       'status': False,
                       'data': None
                       },
             )
-
-        # Continúa con la operación normal de actualización
 
         # Actualizar los datos de User (si existen en la solicitud)
         user_data = request.data.get('user')
@@ -324,6 +299,29 @@ def update_user(request, pk):
             user = User.objects.get(people=people)
             user.rol_id = user_data.get('rol', user.rol_id)
             user.save()
+
+        # Actualizar alergias, discapacidades y condiciones especiales
+        allergies = request.data.get('allergies', [])
+        disabilities = request.data.get('disabilities', [])
+        special_conditions = request.data.get('special_conditions', [])
+
+        # Eliminar registros existentes
+        people.peopleallergies_set.all().delete()
+        people.peopledisabilities_set.all().delete()
+        people.peoplespecialconditions_set.all().delete()
+
+        # Crear nuevos registros
+        for allergy_id in allergies:
+            allergy = Allergies.objects.get(id=allergy_id)
+            peopleAllergies.objects.create(people=people, allergies=allergy)
+
+        for disability_id in disabilities:
+            disability = Disabilities.objects.get(id=disability_id)
+            peopleDisabilities.objects.create(people=people, disabilities=disability)
+
+        for condition_id in special_conditions:
+            condition = specialConditions.objects.get(id=condition_id)
+            peoplespecialConditions.objects.create(people=people, specialConditions=condition)
 
         # Actualizar el campo modified_at con la fecha y hora actual
         people.modified_at = timezone.localtime()
@@ -345,24 +343,62 @@ def update_user(request, pk):
                   },
         )
 
+    except Allergies.DoesNotExist:
+        return Response(
+            data={'code': status.HTTP_200_OK,
+                  'message': 'Una o más alergias especificadas no existen',
+                  'status': False,
+                  'data': None
+                  },
+        )
+
+    except Disabilities.DoesNotExist:
+        return Response(
+            data={'code': status.HTTP_200_OK,
+                  'message': 'Una o más discapacidades especificadas no existen',
+                  'status': False,
+                  'data': None
+                  },
+        )
+
+    except specialConditions.DoesNotExist:
+        return Response(
+            data={'code': status.HTTP_200_OK,
+                  'message': 'Una o más condiciones especiales especificadas no existen',
+                  'status': False,
+                  'data': None
+                  },
+        )
+
+    except Exception as e:
+        data = {
+            'code': status.HTTP_500_INTERNAL_SERVER_ERROR,
+            'status': False,
+            'message': 'Error del servidor',
+            'data': None
+        }
+        return Response(data)
+
+
 @api_view(['DELETE'])
-def delete_user(request, people_id):
+def delete_user(request, pk):
     try:
-        people = People.objects.get(pk=people_id)
+        # Buscar la persona por su ID
+        people = People.objects.get(pk=pk)
     except People.DoesNotExist:
         return Response(
             data={
-                'code': status.HTTP_404_NOT_FOUND,
+                'code': status.HTTP_200_OK,
                 'message': 'La persona no existe',
                 'status': False,
                 'data': None
             },
-            status=status.HTTP_404_NOT_FOUND
+            status=status.HTTP_200_OK
         )
 
     # Si la persona existe, intentamos eliminar al usuario relacionado si existe
     try:
-        user = User.objects.get(people_id=people_id)
+        user = User.objects.get(pk=pk)
         user.delete()
     except User.DoesNotExist:
         pass
@@ -379,3 +415,4 @@ def delete_user(request, people_id):
         },
         status=status.HTTP_200_OK
     )
+

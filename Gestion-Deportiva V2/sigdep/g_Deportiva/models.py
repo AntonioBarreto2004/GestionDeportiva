@@ -17,7 +17,14 @@ class Disabilities(models.Model):
 
     def __str__(self):
         return self.disability_name
+    
+class specialConditions(models.Model):
+    specialConditions_name = models.CharField(max_length=45)
+    description = models.TextField()
 
+    def __str__(self):
+        return self.specialConditions_name
+    
 
 class Rol(models.Model):
     name_rol = models.CharField(max_length=20)
@@ -38,17 +45,33 @@ class People(models.Model):
     date_create = models.DateField(auto_now_add=True)
     type_document_id = models.CharField(max_length=20)
     num_document = models.IntegerField()
-    allergies = models.ForeignKey(Allergies, on_delete=models.CASCADE, blank=True, null=True)
-    disabilities = models.ForeignKey(Disabilities, on_delete=models.CASCADE, blank=True, null=True)
     file_documentidentity = models.FileField(upload_to='documents/', blank=True)
     file_v = models.FileField(upload_to='documents/', blank=True)
     file_f = models.FileField(upload_to='documents/', blank=True)
     modified_at = models.DateTimeField(auto_now_add=True)
-    is_instructors = models.BooleanField()
+    
 
     def __str__(self):
         return f"{self.name} {self.last_name}"
 
+    
+class User(models.Model):
+    people = models.ForeignKey(People, models.DO_NOTHING)
+    rol = models.ForeignKey(Rol, models.DO_NOTHING)
+    is_active = models.BooleanField(default=True)
+    password = models.CharField(max_length=128)
+    last_login = models.DateTimeField(null=True, blank=True, default=timezone.now)
+
+    class Meta:
+        db_table = 'user'
+
+    def set_password(self, raw_password):
+        self.password = make_password(raw_password)
+        self.save()
+
+    def get_email_field_name(self):
+        return 'people__email'
+    
 
 class Instructors(models.Model):
     people = models.ForeignKey(People, on_delete=models.CASCADE)
@@ -57,8 +80,23 @@ class Instructors(models.Model):
 
     def __str__(self):
         return f"{self.people.name} {self.people.last_name}"
+    
+    
+class peopleAllergies(models.Model):
+    people = models.ForeignKey(People, models.DO_NOTHING)
+    allergies = models.ForeignKey(Allergies, on_delete=models.CASCADE)
 
 
+class peopleDisabilities(models.Model):
+    people = models.ForeignKey(People, models.DO_NOTHING)
+    disabilities = models.ForeignKey(Disabilities, on_delete=models.CASCADE)
+
+
+class peoplespecialConditions(models.Model):
+    people = models.ForeignKey(People, models.DO_NOTHING)
+    specialConditions = models.ForeignKey(specialConditions, on_delete=models.CASCADE)
+    
+    
 class Sports(models.Model):
     sport_name = models.CharField(max_length=30)
     description = models.CharField(max_length=256)
@@ -67,7 +105,6 @@ class Sports(models.Model):
 
     def __str__(self):
         return self.sport_name
-
 
 class Athlete(models.Model):
     instructor = models.ForeignKey(Instructors, on_delete=models.CASCADE)
@@ -106,13 +143,18 @@ class AthleteTeam(models.Model):
 
 
 class Category(models.Model):
-    sport = models.ForeignKey(Sports, on_delete=models.CASCADE)
     category_type = models.CharField(max_length=11)
     category_name = models.CharField(max_length=30)
+    description = models.TextField(max_length=250)
     date_create_category = models.DateTimeField(auto_now_add=True)  # Field name made lowercase.
 
     def __str__(self):
-        return self.c_name
+        return self.category_name
+
+    
+class CategorySport(models.Model):
+    category_id = models.ForeignKey(Category, on_delete=models.CASCADE)
+    sport_id  = models.ForeignKey(Sports, on_delete=models.CASCADE)
 
 
 class Tournaments(models.Model):
@@ -173,7 +215,7 @@ class ReceiptPayment(models.Model):
 
 class Anthropometric(models.Model):
     athlete = models.ForeignKey(Athlete, on_delete=models.CASCADE)
-    controlDate = models.DateField()  # Field name made lowercase.
+    controlDate = models.DateField(auto_now_add=True)  # Field name made lowercase.
     arm = models.IntegerField()
     chest = models.CharField(max_length=45)
     hip = models.IntegerField()
@@ -193,19 +235,3 @@ class Anthropometric(models.Model):
         return f"Athlete: {self.athlete.people.name} - Control Date: {self.controlDate}"
 
 
-class User(models.Model):
-    people = models.ForeignKey(People, models.DO_NOTHING)
-    rol = models.ForeignKey(Rol, models.DO_NOTHING)
-    is_active = models.BooleanField(default=True)
-    password = models.CharField(max_length=128)
-    last_login = models.DateTimeField(null=True, blank=True, default=timezone.now)
-
-    class Meta:
-        db_table = 'user'
-
-    def set_password(self, raw_password):
-        self.password = make_password(raw_password)
-        self.save()
-
-    def get_email_field_name(self):
-        return 'people__email'

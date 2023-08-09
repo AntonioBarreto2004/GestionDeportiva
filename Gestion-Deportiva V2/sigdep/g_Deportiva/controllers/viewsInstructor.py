@@ -7,57 +7,92 @@ from ..serializers import *
 
 @api_view(['GET'])
 def list_instructors(request):
-    try:
-        instructors_p = request.GET.get('people', '')
-        experience_years = request.GET.get('experience_years', '')
+    instructors = Instructors.objects.all()
 
-        queryset = Instructors.objects.all()
+    instructor_data = []
+    for instructor in instructors:
+        try:
+            user = User.objects.get(people=instructor.people)
+            rol_name = user.rol.name_rol if user and user.rol else None
+        except User.DoesNotExist:
+            rol_name = None
 
-        if instructors_p:
-            queryset = queryset.filter(instructors_p__icontains=instructors_p)
+        allergies_data = []
+        disabilities_data = []
+        special_conditions_data = []
 
-        if experience_years:
-            queryset = queryset.filter(experience_years__icontains=experience_years)
+        if instructor.people.peopleallergies_set.exists():
+            allergies_data = [
+                {
+                    'id': allergy.allergies.id,
+                    'allergie_name': allergy.allergies.allergie_name,
+                    'description': allergy.allergies.description
+                }
+                for allergy in instructor.people.peopleallergies_set.all()
+            ]
 
-        if not queryset.exists():
-            responde_data = {
-                'code': status.HTTP_200_OK,
-                'status': False,
-                'message': 'No hay datos registrados',
-                'data': None
-            }
+        if instructor.people.peopledisabilities_set.exists():
+            disabilities_data = [
+                {
+                    'id': disability.disabilities.id,
+                    'disability_name': disability.disabilities.disability_name,
+                    'description': disability.disabilities.description
+                }
+                for disability in instructor.people.peopledisabilities_set.all()
+            ]
 
-            return Response (responde_data)
-        
-        serializer_instructor = InstructorSerializer(queryset, many=True)
+        if instructor.people.peoplespecialconditions_set.exists():
+            special_conditions_data = [
+                {
+                    'id': condition.specialConditions.id,
+                    'specialConditions_name': condition.specialConditions.specialConditions_name,
+                    'description': condition.specialConditions.description
+                }
+                for condition in instructor.people.peoplespecialconditions_set.all()
+            ]
 
-        responde_data = {
-                'code': status.HTTP_200_OK,
-                'status': False,
-                'message': 'Datos encontrados exitosamente',
-                'data': serializer_instructor.data
-            }
+        instructor_info = {
+            'id': instructor.people.id,
+            'name': instructor.people.name,
+            'last_name': instructor.people.last_name,
+            'rol': rol_name,
+            'email': instructor.people.email,
+            'photo_user': instructor.people.photo_user.url if instructor.people.photo_user else None,
+            'birthdate': instructor.people.birthdate,
+            'gender': instructor.people.gender,
+            'telephone_number': instructor.people.telephone_number,
+            'type_document': instructor.people.type_document_id,
+            'num_document': instructor.people.num_document,
+            'specialization': instructor.specialization,
+            'experience_years': instructor.experience_years,
+            'file_documentidentity': instructor.people.file_documentidentity.url if instructor.people.file_documentidentity else None,
+            'file_v': instructor.people.file_v.url if instructor.people.file_v else None,
+            'file_f': instructor.people.file_f.url if instructor.people.file_f else None,
+            'allergies': allergies_data,
+            'disabilities': disabilities_data,
+            'special_conditions': special_conditions_data,
+            'modified_at': instructor.people.modified_at,
+        }
+        instructor_data.append(instructor_info)
 
-        return Response (responde_data)
-    
-    except requests.exceptions.ConnectionError:
-        data={
-            'code': status.HTTP_400_BAD_REQUEST,
+    if not instructor_data:
+        response_data = {
+            'code': status.HTTP_200_OK,
             'status': False,
-            'message': 'La URL fallo. Por favor, inténtalo más tarde.', 
-            'data': None
-                  }
-        return Response(data)
-    
-    except Exception as e:
-        data= {
-            'code': status.HTTP_500_INTERNAL_SERVER_ERROR,
-            'status': False, 
-            'message': 'Error del servidor',
-            'data': None
-                    }
-        return Response(data)
-    
+            'message': 'No se encontraron instructores o personas asociadas',
+            'data': []
+        }
+    else:
+        response_data = {
+            'code': status.HTTP_200_OK,
+            'status': True,
+            'message': 'Consulta realizada exitosamente',
+            'data': instructor_data
+        }
+
+    return Response(response_data)
+
+
 
 @api_view(['POST'])
 def create_instructor(request):

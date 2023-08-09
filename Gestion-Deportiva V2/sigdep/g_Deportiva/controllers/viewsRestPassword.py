@@ -1,3 +1,4 @@
+import re
 import base64
 from django.contrib.auth.tokens import default_token_generator
 from django.utils.encoding import force_bytes
@@ -67,13 +68,14 @@ def reset_password_confirm(request, uidb64, token):
                 'data': None
             })
 
-        if len(new_password) < 8 or not any(char.isupper() for char in new_password) or not any(char.islower() for char in new_password) or not any(char.isdigit() for char in new_password):
-            return Response({
-                'code': status.HTTP_200_OK, 
+        if not re.fullmatch(r'^(?=.*\d)(?=.*[A-Z])(?=.*[a-z])(?=.{12,}).*$', new_password):
+            response_data = {
+                'code': status.HTTP_200_OK,
                 'status': False,
-                'message': 'La contraseña debe tener más de 8 caracteres, contener al menos una letra mayúscula, una letra minúscula y un número.',
-                'data': None 
-            })
+                'message': 'La contraseña debe tener más de 12 caracteres, contener al menos una letra mayúscula, una letra minúscula y un número.',
+                'data': None
+            }
+            return Response(response_data)
 
         user.set_password(new_password)
         user.save()
