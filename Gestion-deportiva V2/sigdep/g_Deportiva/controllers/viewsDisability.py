@@ -1,36 +1,55 @@
-import requests
 from rest_framework.decorators import api_view
-from django.core.mail import send_mail
-from django.template.loader import render_to_string
-from django.utils.html import strip_tags
 from rest_framework.response import Response
 from rest_framework import status
-from django.utils import timezone
-from django_filters import rest_framework as filters
 
 from ..models import *
 from ..serializers import *
 
 @api_view(['GET'])
 def list_disability(request):
-    queryset = Disabilities.objects.all()
-    if queryset.exists():
-        serializerDisa = DisabilitiesSerializer(queryset, many=True)
-        response_data = {
-            'code': status.HTTP_200_OK,
-            'status': True,
-            'message': 'Datos encontrados',
-            'data': serializerDisa.data
-        }
-    else:
-        response_data = {
-            'code': status.HTTP_200_OK,
-            'status': False,
-            'message': 'No hay datos',
-            'data': None
-        }
+    disability = request.GET.get('id')
+    if disability:
+        try:
+            disability_id = Disabilities.objects.get(pk=disability)
+            serializer = DisabilitiesSerializer(disability_id)
+            response_data = {
+                'code': status.HTTP_200_OK,
+                'status': True,
+                'message': 'Datos encontrados',
+                'data': [serializer.data]
+            }
+        except Allergies.DoesNotExist:
+            response_data = {
+                'code': status.HTTP_200_OK,
+                'status': False,
+                'message': 'Datos no encontrada',
+                'data': None
+            }
 
-    return Response(response_data)
+    else:   
+        queryset = Disabilities.objects.all()
+
+        disability_name = request.GET.get('disability_name')
+        if disability_name:
+            queryset = queryset.filter(disability_name__icontains=disability_name)
+            
+        if queryset.exists():
+            serializerDisa = DisabilitiesSerializer(queryset, many=True)
+            response_data = {
+                'code': status.HTTP_200_OK,
+                'status': True,
+                'message': 'Datos encontrados',
+                'data': serializerDisa.data
+            }
+        else:
+            response_data = {
+                'code': status.HTTP_200_OK,
+                'status': False,
+                'message': 'No hay datos',
+                'data': None
+            }
+
+        return Response(response_data)
 
 
 @api_view(['POST'])

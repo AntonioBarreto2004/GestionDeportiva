@@ -1,15 +1,18 @@
+import re
 import requests
 from rest_framework import status
+from django.conf import settings
+from django.db import transaction
+from datetime import datetime
+from dateutil.relativedelta import relativedelta
 from rest_framework.decorators import api_view
-from django_filters import rest_framework as filters
+from django.core.mail import send_mail
+from django.template.loader import render_to_string
+from django.utils.html import strip_tags
 from rest_framework.response import Response
 from ..serializers import *
 from ..models import *
 
-
-#ATHLETE
-
-        #METODO GET (LISTAR)
 @api_view(['GET'])
 def list_athlete(request):
     athletes = Athlete.objects.all()
@@ -22,32 +25,75 @@ def list_athlete(request):
         except User.DoesNotExist:
             rol_name = None
 
+        allergies_data = []
+        disabilities_data = []
+        special_conditions_data = []
+
+        if athlete.people.peopleallergies_set.exists():
+            allergies_data = [
+                {
+                    'id': allergy.allergies.id,
+                    'allergie_name': allergy.allergies.allergie_name,
+                    'description': allergy.allergies.description
+                }
+                for allergy in athlete.people.peopleallergies_set.all()
+            ]
+
+        if athlete.people.peopledisabilities_set.exists():
+            disabilities_data = [
+                {
+                    'id': disability.disabilities.id,
+                    'disability_name': disability.disabilities.disability_name,
+                    'description': disability.disabilities.description
+                }
+                for disability in athlete.people.peopledisabilities_set.all()
+            ]
+
+        if athlete.people.peoplespecialconditions_set.exists():
+            special_conditions_data = [
+                {
+                    'id': condition.specialConditions.id,
+                    'specialConditions_name': condition.specialConditions.specialConditions_name,
+                    'description': condition.specialConditions.description
+                }
+                for condition in athlete.people.peoplespecialconditions_set.all()
+            ]
+        
+        birthdate = athlete.people.birthdate
+        age = relativedelta(datetime.now().date(), birthdate).years
+
         athlete_info = {
-            'name': athlete.people.name,
-            'last_name': athlete.people.last_name,
+            'id': athlete.id,
+            'name': f"{athlete.people.name} {athlete.people.last_name}",
+            'rol': rol_name,
             'email': athlete.people.email,
+            'instructor': f"{athlete.instructor.people.name} {athlete.instructor.people.last_name}" if athlete.instructor else None,
+            'sport': athlete.sports.sport_name,
             'photo_user': athlete.people.photo_user.url if athlete.people.photo_user else None,
             'birthdate': athlete.people.birthdate,
+            'age': age,
             'gender': athlete.people.gender,
             'telephone_number': athlete.people.telephone_number,
-            'type_document_id': athlete.people.type_document_id,
+            'type_document': athlete.people.type_document,
             'num_document': athlete.people.num_document,
-            'allergies': athlete.people.allergies.allergie_name if athlete.people.allergies else None,
-            'disabilities': athlete.people.disabilities.disability_name if athlete.people.disabilities else None,
+            'technicalv': athlete.technicalv,
+            'tacticalv': athlete.tacticalv,
+            'physicalv': athlete.physicalv,
             'file_documentidentity': athlete.people.file_documentidentity.url if athlete.people.file_documentidentity else None,
-            'file_v': athlete.people.file_v.url if athlete.people.file_v else None,
-            'file_f': athlete.people.file_f.url if athlete.people.file_f else None,
+            'file_EPS_certificate': athlete.people.file_EPS_certificate.url if athlete.people.file_EPS_certificate else None,
+            'file_informed_consent': athlete.people.file_informed_consent.url if athlete.people.file_informed_consent else None,
+            'allergies': allergies_data,
+            'disabilities': disabilities_data,
+            'special_conditions': special_conditions_data,
             'modified_at': athlete.people.modified_at,
-            'sport': athlete.sports.sport_name,
-            'rol': rol_name,
         }
         athlete_data.append(athlete_info)
 
     if not athlete_data:
         response_data = {
             'code': status.HTTP_200_OK,
-            'status': False,
-            'message': 'No se encontraron instructores o personas asociadas',
+            'status': True,
+            'message': 'No se encuentran datos de atletas.',
             'data': []
         }
     else:
@@ -61,94 +107,227 @@ def list_athlete(request):
     return Response(response_data)
 
 
+def send_activation_email(user_name, user_email, password):
+    subject = 'Bienvenido al Sistema SigDep'
+    html_message = render_to_string('static/html/correo.html', { 'user_name': user_name,'user_email': user_email, 'password': password})
+    plain_message = strip_tags(html_message)
+    from_email = settings.DEFAULT_FROM_EMAIL
+    recipient_list = [user_email]
+    send_mail(subject, plain_message, from_email, recipient_list, html_message=html_message, fail_silently=False)
+
+EMAIL_REGEX = re.compile(r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z]+$')
     
 @api_view(['POST'])
 def create_athlete(request):
-    data = request.data
-    atleta_data = data.get('people')
+    with transaction.atomic():
+        # Obtener los datos del cuerpo de la solicitud
+        person_data = request.data.get('people')
+        instructor_id = request.data.get('instructor')
+        technicalv = request.data.get('technicalv')
+        tacticalv = request.data.get('tacticalv')
+        physicalv = request.data.get('physicalv')
+        sport_id = request.data.get('sports')
 
-    empty_fields = []
+        # Validar que las valoraciones estén dentro del rango de 1 a 5
+        def validate_rating(rating):
+            try:
+                rating = int(rating)
+                if rating < 1:
+                    return 1
+                elif rating > 5:
+                    return 5
+                return rating
+            except ValueError:
+                return 1
 
-    required_fields = ['people', 'instructor', 'technicalv', 'tacticalv', 'physicalv', 'sports']
+        technicalv = validate_rating(technicalv)
+        tacticalv = validate_rating(tacticalv)
+        physicalv = validate_rating(physicalv)
 
-    for field in required_fields:
-        if field not in data or data[field] == "":
-            empty_fields.append(field)
+        # Validar que los campos requeridos no estén vacíos
+        empty_fields = []
+        required_fields = ['email', 'name', 'last_name', 'num_document', 'birthdate', 
+                           'telephone_number', 'type_document', 'gender']
+        for field in required_fields:
+            if not person_data.get(field):
+                empty_fields.append(field)
 
-    if empty_fields:
-        response_data = {
-            'code': status.HTTP_400_BAD_REQUEST,
-            'status': False,
-            'message': 'Los siguientes campos son requeridos o están vacíos:',
-            'data': format(', '.join(empty_fields))
-        }
-        return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
-
-    person_id = data['people']
-    person_id = request.data.get('people')
-
-    if Athlete.objects.filter(people_id=person_id).exists():
-        response_data = {
-            'code': status.HTTP_200_OK,
-            'message': 'Ya existe un Atleta asociado a esta persona.',
-            'status': False,
-            'data': None
-        }
-        return Response(response_data)
-    
-    try:
-        person = People.objects.get(id=person_id)
-        user = User.objects.get(people=person)
-        print("Rol del usuario:", user.rol)
-        if user.rol.name_rol != "Atleta":
+        if empty_fields:
             return Response(
                 data={
                     'code': status.HTTP_200_OK,
-                    'status': False,
-                    'message': 'La persona no tiene el rol de Atleta.',
+                    'message': 'Los siguientes campos no pueden estar vacíos',
+                    'status': True,
+                    'data': f'{empty_fields}'
+                })
+
+        # Realizar verificación adicional para evitar usuarios duplicados
+        email = person_data['email']
+        num_document = person_data['num_document']
+        # Validate email format
+        if not EMAIL_REGEX.match(email):
+            return Response(
+                data={
+                    'code': status.HTTP_200_OK,
+                    'status': True,
+                    'message': 'El formato del correo electrónico es inválido.',
                     'data': None
-                }
-            )
-    except People.DoesNotExist:
-        return Response(
-            data={
-                'code': status.HTTP_400_BAD_REQUEST,
-                'status': False,
-                'message': 'La persona no existe.',
+                })
+        if People.objects.filter(email=email).exists():
+            return Response(
+                data={
+                    'code': status.HTTP_200_OK,
+                    'message': 'Ya existe un usuario con este correo registrado',
+                    'status': True,
+                    'data': None
+                })
+
+        if People.objects.filter(num_document=num_document).exists():
+            return Response(
+                data={
+                    'code': status.HTTP_200_OK,
+                    'message': 'Ya existe un usuario con este número de documento',
+                    'status': True,
+                    'data': None
+                })
+
+        # Validar nombre y apellido
+        name = person_data['name']
+        last_name = person_data['last_name']
+        type_document = person_data['type_document']
+        phone_number = person_data['telephone_number']
+
+        if not re.match(r'^[a-zA-Z\s]+$', name) or not re.match(r'^[a-zA-Z\s]+$', last_name):
+            response_data = {
+                'code': status.HTTP_200_OK,
+                'message': 'El nombre y apellido del usuario solo pueden contener letras y espacios.',
+                'status': True
+            }
+            return Response(response_data)
+
+        # Validar el número de documento
+        if not re.fullmatch(r'^\d{8,10}$', str(num_document)):
+            response_data = {
+                'code': status.HTTP_200_OK,
+                'status': True,
+                'message': 'El número de documento debe tener entre 8 y 10 dígitos.',
                 'data': None
             }
+            return Response(response_data)
+        
+        if not re.match(r'^[a-zA-Z\s]+$', type_document):
+                response_data = {
+                    'code': status.HTTP_200_OK,
+                    'message': 'El Tipo de documento solo pueden contener letras y espacios.',
+                    'status': True
+                }
+                return Response(response_data)
+
+        if not re.match(r'^\d{10}$', phone_number):
+            response_data = {
+                'code': status.HTTP_200_OK,
+                'message':'El numero telefonico solo puede contener 10 Digitos y Ninguna letra',
+                'status': True
+            }
+            return Response(response_data)
+
+        people_serializer = PeopleSerializer(data=person_data)
+        if people_serializer.is_valid():
+            person = people_serializer.save()
+        else:
+            response_data = {
+                'data': status.HTTP_200_OK,
+                'status': True,
+                'message': 'Error en la creacion.',
+                'data': None
+            }
+            return Response(response_data)
+        # Obtener el instructor por su ID
+        try:
+            instructor = Instructors.objects.get(pk=instructor_id)
+        except Instructors.DoesNotExist:
+            return Response(
+                data={
+                    'code': status.HTTP_200_OK,
+                    'message': f'El instructor con ID "{instructor_id}" no existe.',
+                    'status': True,
+                    'data': None
+                })
+        # Obtener o crear la instancia de Sports
+        try:
+            sports_instance = Sports.objects.get(pk=sport_id)
+        except Sports.DoesNotExist:
+            return Response(
+                data={
+                    'code': status.HTTP_200_OK,
+                    'message': f'El deporte con ID "{sport_id}" no existe.',
+                    'status': True,
+                    'data': None
+                })
+        
+        # Crear el atleta
+        Athlete.objects.create(
+            people=person,
+            instructor=instructor,
+            technicalv=technicalv,
+            tacticalv=tacticalv,
+            physicalv=physicalv,
+            sports=sports_instance
         )
-    
-    instructor_id = request.data.get('instructor')
-    if not instructor_id:
-        return Response({
-            'code': status.HTTP_400_BAD_REQUEST,
-            'status': False,
-            'message': 'El campo instructor es requerido.',
-            'data': None
-        }, status=status.HTTP_400_BAD_REQUEST)
 
-    try:
-        instructor = Instructors.objects.get(id=instructor_id)
-    except Instructors.DoesNotExist:
-        return Response({
-            'code': status.HTTP_404_NOT_FOUND,
-            'status': False,
-            'message': 'Instructor no encontrado.',
-            'data': None
-        }, status=status.HTTP_404_NOT_FOUND)
+        # Buscar el rol "Atleta" en la base de datos y asignarlo al usuario
+        try:
+            athlete_role = Rol.objects.get(name_rol='Atleta')
+        except Rol.DoesNotExist:
+            return Response(
+                data={
+                    'code': status.HTTP_200_OK,
+                    'status': True,
+                    'message': 'El rol "Atleta" no existe.',
+                    'data': None
+                })
+        # Obtener el número de documento y convertirlo en cadena
+        document_number = str(num_document)  # Convertir el número de documento a cadena
+        generated_password = document_number  # Usar la cadena del número de documento como contraseña
+  # Generar contraseña basada en el número de documento
 
-    serializer = AthleteSerializer(data=request.data)
-    serializer.is_valid(raise_exception=True)
-    serializer.save(instructor=instructor)  # Establecer el objeto instructor en lugar del ID
+        # Crear el usuario y asignar el rol de Atleta
+        user = User.objects.create(
+            people=person,
+            rol=athlete_role,
+            password=make_password(generated_password),  # Aplicar el hash a la contraseña
+            is_active=True
+        )
 
-    response_data = {
-        'code': status.HTTP_201_CREATED,
-        'message': 'Atleta registrado exitosamente',
-        'status': True,
-        'data': None
-    }
-    return Response(response_data)
+        # Manejar las relaciones muchos a muchos
+        if 'allergies' in person_data:
+            allergies_ids = [allergy['id'] for allergy in person_data['allergies']]
+            allergies_associated = Allergies.objects.filter(id__in=allergies_ids)
+            for allergy in allergies_associated:
+                peopleAllergies.objects.create(people=person, allergies=allergy)
+
+        if 'disabilities' in person_data:
+            disabilities_ids = [disability['id'] for disability in person_data['disabilities']]
+            disabilities_associated = Disabilities.objects.filter(id__in=disabilities_ids)
+            for disability in disabilities_associated:
+                peopleDisabilities.objects.create(people=person, disabilities=disability)
+
+        if 'special_conditions' in person_data:
+            special_conditions_ids = [condition['id'] for condition in person_data['special_conditions']]
+            special_conditions_associated = specialConditions.objects.filter(id__in=special_conditions_ids)
+            for condition in special_conditions_associated:
+                peoplespecialConditions.objects.create(people=person, specialConditions=condition)
+
+        # Manejar las relaciones muchos a muchos (allergies, disabilities, special_conditions)
+        send_activation_email(person.name, person.email, generated_password)
+
+        return Response(
+            data={
+                'code': status.HTTP_200_OK,
+                'status': True,
+                'message': 'Registro se ha realizado con éxito.',
+                'data': None
+            })
 
 
 
@@ -164,16 +343,141 @@ def update_athlete(request, pk):
                                 'data':None
                                 },
                             )
+        people_data = request.data.get('people')
+        if people_data:
+            serializerPd = PeopleSerializer(athlete.people, data=people_data, partial=True)
+            serializerPd.is_valid(raise_exception=True)
+            serializerPd.save()  # Actualiza los datos de People
+
+        name = people_data.get('name') if people_data else None
+        last_name = people_data.get('last_name') if people_data else None
+
+        if name and not re.match(r'^[a-zA-Z\s]+$', name):
+            response_data = {
+                'code': status.HTTP_200_OK,
+                'message': 'Nombre de la persona solo puede contener letras y espacios.',
+                'status': False
+            }
+            return Response(response_data)
+
+        if last_name and not re.match(r'^[a-zA-Z\s]+$', last_name):
+            response_data = {
+                'code': status.HTTP_200_OK,
+                'message': 'Apellido de la persona solo puede contener letras y espacios.',
+                'status': False
+            }
+            return Response(response_data)
         
-        serializer = AthleteSerializer(athlete, data=request.data, partial=True)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
+        technicalv = request.data.get('technicalv')
+        tacticalv = request.data.get('tacticalv')
+        physicalv = request.data.get('physicalv')
+
+        # Validar que las valoraciones estén dentro del rango de 1 a 5
+        def validate_rating(rating):
+            try:
+                rating = int(rating)
+                if rating < 1:
+                    return 1
+                elif rating > 5:
+                    return 5
+                return rating
+            except ValueError:
+                return 1
         
+        if technicalv:
+            athlete.technicalv = validate_rating(technicalv)
+        if tacticalv:
+            athlete.tacticalv = validate_rating(tacticalv)
+        if physicalv:
+            athlete.physicalv = validate_rating(physicalv)
+
+        # Actualizar llave foránea 'instructor' si se proporciona
+        instructor_id = request.data.get('instructor')
+        if instructor_id is not None:
+            try:
+                instructor = Instructors.objects.get(pk=instructor_id)
+                athlete.instructor = instructor
+            except Instructors.DoesNotExist:
+                return Response(data={
+                    'code': status.HTTP_400_BAD_REQUEST,
+                    'message': f'Instructor con ID {instructor_id} no encontrado.',
+                    'status': False,
+                    'data': None,
+                })
+
+        # Actualizar llave foránea 'sports' si se proporciona
+        sport_id = request.data.get('sports')
+        if sport_id is not None:
+            try:
+                sports_instance = Sports.objects.get(pk=sport_id)
+                athlete.sports = sports_instance
+            except Sports.DoesNotExist:
+                return Response(data={
+                    'code': status.HTTP_400_BAD_REQUEST,
+                    'message': f'Deporte con ID {sport_id} no encontrado.',
+                    'status': False,
+                    'data': None,
+                })
+
+        # Actualizar alergias, discapacidades y condiciones especiales
+        allergies = request.data.get('allergies', [])
+        disabilities = request.data.get('disabilities', [])
+        special_conditions = request.data.get('special_conditions', [])
+
+        with transaction.atomic():  # Utilizar una transacción para las operaciones de relación
+            if allergies is not None:
+                athlete.people.peopleallergies_set.all().delete()
+                for allergy_id in allergies:
+                    try:
+                        allergy = Allergies.objects.get(id=allergy_id)
+                        peopleAllergies.objects.create(people=athlete.people, allergies=allergy)
+                    except Allergies.DoesNotExist:
+                        return Response(
+                            data={
+                                'code': status.HTTP_400_BAD_REQUEST,
+                                'status': False,
+                                'message': f'Alergia con ID {allergy_id} no encontrada.',
+                                'data': None
+                            })
+
+            if disabilities is not None:
+                athlete.people.peopledisabilities_set.all().delete()
+                for disability_id in disabilities:
+                    try:
+                        disability = Disabilities.objects.get(id=disability_id)
+                        peopleDisabilities.objects.create(people=athlete.people, disabilities=disability)
+                    except Disabilities.DoesNotExist:
+                        return Response(
+                            data={
+                                'code': status.HTTP_400_BAD_REQUEST,
+                                'status': False,
+                                'message': f'Discapacidad con ID {disability_id} no encontrada.',
+                                'data': None
+                            })
+
+            if special_conditions is not None:
+                athlete.people.peoplespecialconditions_set.all().delete()
+                for condition_id in special_conditions:
+                    try:
+                        condition = specialConditions.objects.get(id=condition_id)
+                        peoplespecialConditions.objects.create(people=athlete.people, specialConditions=condition)
+                    except specialConditions.DoesNotExist:
+                        return Response(
+                            data={
+                                'code': status.HTTP_400_BAD_REQUEST,
+                                'status': False,
+                                'message': f'Condición especial con ID {condition_id} no encontrada.',
+                                'data': None
+                            })
+        
+        athlete.save()
+        
+        serializer = AthleteSerializer(athlete)
         response_data ={
             'code': status.HTTP_200_OK,
             'message': f'Datos de {athlete.people.name} actualizados exitosamente',
             'status': True,
-            'data': None
+            'data': serializer.data
         }
         return Response(response_data)
     except requests.exceptions.ConnectionError:
@@ -199,43 +503,51 @@ def update_athlete(request, pk):
 @api_view(['DELETE'])
 def delete_athlete(request, pk):
     try:
-        try:
-            athlete = Athlete.objects.get(pk=pk)
-        except Athlete.DoesNotExist:
-            return Response(data={'code': status.HTTP_200_OK, 
-                                'message': 'Atleta no encontrado.', 
-                                'status': False,
-                                'data':None
-                                }, 
-                    
-                            )
+        with transaction.atomic():
+            try:
+                athlete = Athlete.objects.get(pk=pk)
+            except Athlete.DoesNotExist:
+                response_data = {
+                    'code': status.HTTP_200_OK,
+                    'message': 'Atleta no encontrado.',
+                    'status': False,
+                    'data': None
+                }
+                return Response(data=response_data)
 
-        athlete_name = athlete.people.name
-        athlete.delete()
-        
-        response_data ={
-            'code': status.HTTP_204_NO_CONTENT,
-            'message': f'Datos de {athlete_name} eliminados exitosamente',
-            'status': True,
-            'data': None
-        }
-        return Response(data=response_data, status=status.HTTP_204_NO_CONTENT)
-    except requests.exceptions.ConnectionError:
-        data={
-            'code': status.HTTP_400_BAD_REQUEST,
-            'status': False,
-            'message': 'La URL se ha perdido. Por favor, inténtalo más tarde.', 
-            'data': None
-                  }
-        return Response(data)
-    
+            athlete_name = athlete.people.name
+            
+            # Eliminar las relaciones asociadas a la persona del atleta
+            athlete.people.peopleallergies_set.all().delete()
+            athlete.people.peopledisabilities_set.all().delete()
+            athlete.people.peoplespecialconditions_set.all().delete()
+
+            # Eliminar el usuario relacionado
+            try:
+                user = User.objects.get(people=athlete.people)
+                user.delete()
+            except User.DoesNotExist:
+                pass
+
+            # Finalmente, eliminar al atleta y a la persona del atleta
+            athlete.people.delete()
+            athlete.delete()
+
+            response_data = {
+                'code': status.HTTP_200_OK,
+                'message': f'Datos de {athlete_name} eliminados exitosamente',
+                'status': True,
+                'data': None
+            }
+            return Response(data=response_data)
+
     except Exception as e:
-        data= {
+        data = {
             'code': status.HTTP_500_INTERNAL_SERVER_ERROR,
-            'status': False, 
+            'status': False,
             'message': 'Error del servidor',
             'data': None
-                    }
+        }
         return Response(data)
     
     
@@ -319,4 +631,4 @@ def state_atlete(request):
             'message': 'Error del servidor',
             'data': None
         }
-        return Response(data, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return Response(data)

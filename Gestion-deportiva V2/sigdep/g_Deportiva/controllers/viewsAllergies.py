@@ -6,22 +6,47 @@ from ..serializers import *
 
 @api_view(['GET'])
 def list_Allergies(request):
-    queryset = Allergies.objects.all()
-    if queryset.exists():
-        serializerDisa = AllergiesSerializer(queryset, many=True)
-        response_data = {
-            'code': status.HTTP_200_OK,
-            'status': True,
-            'message': 'Datos encontrados',
-            'data': serializerDisa.data
-        }
+    allergie_id = request.GET.get('id')
+
+    if allergie_id:
+        try:
+            allergie = Allergies.objects.get(pk=allergie_id)
+            serializer = AllergiesSerializer(allergie)
+            response_data = {
+                'code': status.HTTP_200_OK,
+                'status': True,
+                'message': 'Datos encontrados',
+                'data': [serializer.data]
+            }
+        except Allergies.DoesNotExist:
+            response_data = {
+                'code': status.HTTP_200_OK,
+                'status': False,
+                'message': 'Alergia no encontrada',
+                'data': None
+            }
     else:
-        response_data = {
-            'code': status.HTTP_200_OK,
-            'status': False,
-            'message': 'No hay datos',
-            'data': None
-        }
+        queryset = Allergies.objects.all()
+
+        allergie_name = request.GET.get('allergie_name')
+        if allergie_name:
+            queryset = queryset.filter(allergie_name__icontains=allergie_name)
+
+        if queryset.exists():
+            serializer = AllergiesSerializer(queryset, many=True)
+            response_data = {
+                'code': status.HTTP_200_OK,
+                'status': True,
+                'message': 'Datos encontrados',
+                'data': serializer.data
+            }
+        else:
+            response_data = {
+                'code': status.HTTP_200_OK,
+                'status': False,
+                'message': 'No hay datos',
+                'data': None
+            }
 
     return Response(response_data)
 

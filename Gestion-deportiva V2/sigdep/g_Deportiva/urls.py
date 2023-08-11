@@ -1,5 +1,5 @@
 from django.urls import path
-from g_Deportiva.controllers import viewsUsers
+from g_Deportiva.controllers import viewsPeople
 from g_Deportiva.controllers import viewsRestPassword
 from g_Deportiva.controllers import viewsUpdatePhoto
 from g_Deportiva.controllers import viewsRole
@@ -13,13 +13,14 @@ from g_Deportiva.controllers import viewsCompareChanges
 from g_Deportiva.controllers import viewsCategory
 from g_Deportiva.controllers import viewsAthlete
 from g_Deportiva.controllers import viewsExportPdf
+from g_Deportiva.controllers import viewsSpecial_conditions
 from g_Deportiva import views
 
 urlpatterns = [
-    path('list-users/', viewsUsers.list_users, name='list_users'),
-    path('create-user/', viewsUsers.create_user, name='create_user'),
-    path('update-user/<int:pk>/', viewsUsers.update_user, name='update_user'),
-    path('delete-user/<people_id>/', viewsUsers.delete_user, name='delete_user'),
+    path('list-peoples/', viewsPeople.list_users, name='list_users'),
+    path('create-people/', viewsPeople.create_user, name='create_user'),
+    path('update-people/<int:pk>/', viewsPeople.update_user, name='update_user'),
+    path('delete-people/<int:pk>/', viewsPeople.delete_user, name='delete_user'),
     path('update-photo/<people_id>/', viewsUpdatePhoto.update_profile_photo, name='Update Photo'),
 
     path('list-roles/', viewsRole.list_roles, name='list_roles'),
@@ -72,6 +73,11 @@ urlpatterns = [
     path('athlete-state/', viewsAthlete.state_atlete, name='status atleta'),
 
     path('export-pdf/', viewsExportPdf.export_users_to_pdf, name='export_users'),
+
+    path('special-conditions/', viewsSpecial_conditions.list_special_conditions, name='list_special_conditions'),
+    path('special-conditions-create/', viewsSpecial_conditions.create_special_condition, name='create_special_condition'),
+    path('special-conditions-update/<int:condition_id>/', viewsSpecial_conditions.update_special_condition, name='update_special_condition'),
+    path('special-conditions-delete/<int:pk>/', viewsSpecial_conditions.delete_special_condition, name='delete_special_condition'),
 
     path('login/', views.custom_login, name='Login'),
     path('reset-password/', viewsRestPassword.reset_password, name='reset_Password'),

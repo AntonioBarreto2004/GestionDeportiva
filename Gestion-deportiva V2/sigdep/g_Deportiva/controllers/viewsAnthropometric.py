@@ -1,5 +1,7 @@
 from rest_framework import status
 from datetime import datetime, timedelta
+from django.db.models import Q 
+from dateutil.relativedelta import relativedelta
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from ..serializers import *
@@ -7,28 +9,84 @@ from ..models import *
 
 @api_view(['GET'])
 def list_anthro(request):
-    athlete_id = request.GET.get('athlete')
+    athlete_id = request.GET.get('athlete_id')
+    min_age = request.GET.get('min_age')
+    max_age = request.GET.get('max_age')
+    gender = request.GET.get('gender')
+    arm = request.GET.get('arm')
+    chest = request.GET.get('chest')
+    hip = request.GET.get('hip')
+    twin = request.GET.get('twin')
+    humerus = request.GET.get('humerus')
+    femur = request.GET.get('femur')
+    wrist = request.GET.get('wrist')
+    triceps = request.GET.get('triceps')
+    supraspinal = request.GET.get('supraspinal')
+    pectoral = request.GET.get('pectoral')
+    zise = request.GET.get('zise')
+    weight = request.GET.get('weight')
+    bmi = request.GET.get('bmi')
 
-    queryset = Anthropometric.objects.all()
+    query = Q()
 
     if athlete_id:
-        queryset = queryset.filter(athlete_id=athlete_id)
+        query &= Q(athlete_id=athlete_id)
 
-    if not queryset.exists():
-        return Response({
-            'code': status.HTTP_200_OK,
-            'message': 'No se encontraron datos existentes',
-            'status': False,
-            'data': []
-        })
+    filters = {}
 
-    athlete_data = {}  # Diccionario para agrupar datos por atleta
+    if min_age and max_age:
+        max_birthdate = datetime.now().date() - relativedelta(years=int(min_age))
+        min_birthdate = datetime.now().date() - relativedelta(years=int(max_age))
+        query &= Q(athlete__people__birthdate__range=(min_birthdate, max_birthdate))
+
+    if gender:
+        query &= Q(athlete__people__gender=gender)
+
+    if arm:
+        filters['arm'] = int(arm)
+    if chest:
+        filters['chest'] = chest
+    if hip:
+        filters['hip'] = int(hip)
+    if twin:
+        filters['twin'] = int(twin)
+    if humerus:
+        filters['humerus'] = int(humerus)
+    if femur:
+        filters['femur'] = int(femur)
+    if wrist:
+        filters['wrist'] = int(wrist)
+    if triceps:
+        filters['triceps'] = int(triceps)
+    if supraspinal:
+        filters['supraspinal'] = int(supraspinal)
+    if pectoral:
+        filters['pectoral'] = int(pectoral)
+    if zise:
+        filters['zise'] = int(zise)
+    if weight:
+        filters['weight'] = int(weight)
+    if bmi:
+        filters['bmi'] = int(bmi)
+
+    if filters:
+        query &= Q(**filters)
+
+    queryset = Anthropometric.objects.filter(query)
+    serialized_data = []
+
     for item in queryset:
-        serializer = AnthropometricSerializer(item)
-        athlete = Athlete.objects.get(id=item.athlete_id)
-        item_data = {
+        birthdate = item.athlete.people.birthdate
+        age = relativedelta(datetime.now().date(), birthdate).years
+
+        data = {
             'id': item.id,
-            'controlDate': item.controlDate.strftime('%Y-%m-%d'),
+            'athlete_id': item.athlete.id,
+            'athlete_name': f"{item.athlete.people.name} {item.athlete.people.last_name}",
+            'gender': item.athlete.people.gender,
+            'birthdate': birthdate,
+            'age': age,
+            'controlDate': item.controlDate,
             'arm': item.arm,
             'chest': item.chest,
             'hip': item.hip,
@@ -42,32 +100,25 @@ def list_anthro(request):
             'zise': item.zise,
             'weight': item.weight,
             'bmi': item.bmi,
-            'updated_date': item.updated_date.strftime('%Y-%m-%dT%H:%M:%S.%f%z')
         }
-        
-        athlete_name = f"{athlete.people.name} {athlete.people.last_name}"
-        if athlete_name in athlete_data:
-            athlete_data[athlete_name].append(item_data)
-        else:
-            athlete_data[athlete_name] = [item_data]
+        serialized_data.append(data)
 
-    data = []
-    for athlete_name, records in athlete_data.items():
-        athlete_entry = {
-            'athlete': athlete_name,
-            'data': records
+    if serialized_data:
+        response_data = {
+            'code': status.HTTP_200_OK,
+            'status': True,
+            'message': 'Datos encontrados exitosamente',
+            'data': serialized_data
         }
-        data.append(athlete_entry)
-
-    response_data = {
-        'code': status.HTTP_200_OK,
-        'status': False,
-        'message': 'Datos encontrados exitosamente',
-        'data': data
-    }
+    else:
+        response_data = {
+            'code': status.HTTP_200_OK,
+            'status': False,
+            'message': 'No se encontraron datos',
+            'data': []
+        }
 
     return Response(response_data)
-
 
     
 @api_view(['POST'])
@@ -90,17 +141,6 @@ def create_anthro(request):
         return Response({
             'code': status.HTTP_200_OK,
             'message': 'Ya se ha registrado un antropométrico para este atleta hoy',
-            'status': False,
-            'data': None
-        })
-
-    # Verifica si hay registros en los últimos 90 días
-    recent_record = Anthropometric.objects.filter(athlete_id=athlete_id, controlDate__gte=min_date).exists()
-
-    if not recent_record:
-        return Response({
-            'code': status.HTTP_200_OK,
-            'message': 'Debe pasar al menos 90 días antes de registrar otro antropométrico',
             'status': False,
             'data': None
         })

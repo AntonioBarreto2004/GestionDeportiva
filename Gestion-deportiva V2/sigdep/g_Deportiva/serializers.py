@@ -2,7 +2,6 @@ from rest_framework import serializers
 from .models import *
 
 
-
 class DisabilitiesSerializer(serializers.ModelSerializer):
     class Meta:
         model = Disabilities
@@ -13,6 +12,10 @@ class AllergiesSerializer(serializers.ModelSerializer):
         model = Allergies
         fields = ('id', 'allergie_name', 'description')
 
+class specialConditionsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = specialConditions
+        fields = ('id', 'specialConditions_name', 'description')
 
 class RolSerializer(serializers.ModelSerializer):
     class Meta:
@@ -51,8 +54,8 @@ class PeopleSerializer(serializers.ModelSerializer):
     class Meta:
         model = People
         fields = ['id','user', 'name', 'last_name', 'email', 'photo_user', 'birthdate', 'gender', 'telephone_number',
-                  'type_document_id', 'num_document', 'allergies', 'disabilities', 'file_documentidentity',
-                  'file_v', 'file_f', 'modified_at', 'rol_name']
+                  'type_document', 'num_document', 'file_documentidentity',
+                  'file_EPS_certificate', 'file_informed_consent', 'modified_at', 'rol_name']
 
     def create(self, validated_data):
         user_data = validated_data.pop('user', None)  # Si no se proporciona 'user', establecer como None
@@ -78,8 +81,7 @@ class TeamSerializer(serializers.ModelSerializer):
         fields = ('instructors', 'sport','team_name',  'team_image', 'description', 'date_create_team')
 
 class InstructorSerializer(serializers.ModelSerializer):
-    people = serializers.StringRelatedField()
-
+    people = PeopleSerializer()  # Agregar este campo para incluir los datos de People
     class Meta:
         model = Instructors
         fields = ['id', 'people', 'specialization', 'experience_years']
@@ -92,10 +94,9 @@ class AnthropometricSerializer(serializers.ModelSerializer):
                   'wrist', 'triceps', 'supraspinal', 'pectoral', 'zise', 'weight', 'bmi', 'updated_date')
         
 class CategorySerializer(serializers.ModelSerializer):
-
     class Meta:
         model = Category
-        fields = ('id', 'sport', 'category_type', 'category_name', 'date_create_category')
+        fields = ('id', 'category_name', 'date_create_category')
 
     
 class AthleteSerializer(serializers.ModelSerializer):
@@ -103,3 +104,4 @@ class AthleteSerializer(serializers.ModelSerializer):
     class Meta:
         model = Athlete
         fields = ('id', 'instructor', 'people', 'sports', 'technicalv', 'tacticalv', 'physicalv', 'athlete_status')
+

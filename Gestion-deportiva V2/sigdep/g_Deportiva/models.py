@@ -9,6 +9,9 @@ class Allergies(models.Model):
 
     def __str__(self):
         return self.allergie_name
+    
+    class Meta:
+        db_table = 'allergies'
 
 
 class Disabilities(models.Model):
@@ -18,6 +21,9 @@ class Disabilities(models.Model):
     def __str__(self):
         return self.disability_name
     
+    class Meta:
+        db_table = 'disabilities'
+    
 class specialConditions(models.Model):
     specialConditions_name = models.CharField(max_length=45)
     description = models.TextField()
@@ -25,13 +31,18 @@ class specialConditions(models.Model):
     def __str__(self):
         return self.specialConditions_name
     
-
+    class Meta:
+        db_table = 'specialConditions'
+    
 class Rol(models.Model):
     name_rol = models.CharField(max_length=20)
     description = models.TextField()
 
     def __str__(self):
         return self.name_rol
+    
+    class Meta:
+        db_table = 'rol'
 
 
 class People(models.Model):
@@ -43,16 +54,19 @@ class People(models.Model):
     gender = models.CharField(max_length=9)
     telephone_number = models.CharField(max_length=10)
     date_create = models.DateField(auto_now_add=True)
-    type_document_id = models.CharField(max_length=20)
+    type_document = models.CharField(max_length=20)
     num_document = models.IntegerField()
     file_documentidentity = models.FileField(upload_to='documents/', blank=True)
-    file_v = models.FileField(upload_to='documents/', blank=True)
-    file_f = models.FileField(upload_to='documents/', blank=True)
+    file_EPS_certificate = models.FileField(upload_to='documents/', blank=True)
+    file_informed_consent = models.FileField(upload_to='documents/', blank=True)
     modified_at = models.DateTimeField(auto_now_add=True)
     
 
     def __str__(self):
         return f"{self.name} {self.last_name}"
+    
+    class Meta:
+        db_table = 'people'
 
     
 class User(models.Model):
@@ -73,7 +87,6 @@ class User(models.Model):
         return 'people__email'
     
 
-
 class Instructors(models.Model):
     people = models.ForeignKey(People, on_delete=models.CASCADE)
     specialization = models.CharField(max_length=100)
@@ -82,17 +95,32 @@ class Instructors(models.Model):
     def __str__(self):
         return f"{self.people.name} {self.people.last_name}"
     
+    class Meta:
+        db_table = 'instructors'
+    
+    
 class peopleAllergies(models.Model):
     people = models.ForeignKey(People, models.DO_NOTHING)
     allergies = models.ForeignKey(Allergies, on_delete=models.CASCADE)
+
+    class Meta:
+        db_table = 'peopleAllergies'
+
 
 class peopleDisabilities(models.Model):
     people = models.ForeignKey(People, models.DO_NOTHING)
     disabilities = models.ForeignKey(Disabilities, on_delete=models.CASCADE)
 
+    class Meta:
+        db_table = 'peopleDisabilities'
+
 class peoplespecialConditions(models.Model):
     people = models.ForeignKey(People, models.DO_NOTHING)
     specialConditions = models.ForeignKey(specialConditions, on_delete=models.CASCADE)
+    
+    class Meta:
+        db_table = 'peoplespecialConditions'
+
     
 class Sports(models.Model):
     sport_name = models.CharField(max_length=30)
@@ -102,9 +130,12 @@ class Sports(models.Model):
 
     def __str__(self):
         return self.sport_name
+    
+    class Meta:
+        db_table = 'sports'
 
 class Athlete(models.Model):
-    instructor = models.ForeignKey(Instructors, on_delete=models.CASCADE)
+    instructor = models.ForeignKey(Instructors, on_delete=models.SET_NULL, null=True)
     people = models.ForeignKey(People, on_delete=models.CASCADE)
     technicalv = models.CharField(max_length=50)
     tacticalv = models.CharField(max_length=50)
@@ -114,6 +145,9 @@ class Athlete(models.Model):
 
     def __str__(self):
         return f"{self.people.name} {self.people.last_name}"
+    
+    class Meta:
+        db_table = 'athlete'
 
 
 class Team(models.Model):
@@ -126,6 +160,9 @@ class Team(models.Model):
 
     def __str__(self):
         return self.team_name
+    
+    class Meta:
+        db_table = 'team'
 
 
 class AthleteTeam(models.Model):
@@ -138,9 +175,10 @@ class AthleteTeam(models.Model):
     def __str__(self):
         return f"Athlete: {self.athlete.people.name} - Team: {self.team.team_name}"
 
+    class Meta:
+        db_table = 'athleteTeam'
 
 class Category(models.Model):
-    category_type = models.CharField(max_length=11)
     category_name = models.CharField(max_length=30)
     description = models.TextField(max_length=250)
     date_create_category = models.DateTimeField(auto_now_add=True)  # Field name made lowercase.
@@ -148,10 +186,16 @@ class Category(models.Model):
     def __str__(self):
         return self.category_name
     
+    class Meta:
+        db_table = 'category'
+
+    
 class CategorySport(models.Model):
     category_id = models.ForeignKey(Category, on_delete=models.CASCADE)
     sport_id  = models.ForeignKey(Sports, on_delete=models.CASCADE)
 
+    class Meta:
+        db_table = 'categorySport'
 
 class Tournaments(models.Model):
     name_tournament = models.CharField(max_length=100)
@@ -169,6 +213,9 @@ class Tournaments(models.Model):
 
     def __str__(self):
         return self.name_tournament
+    
+    class Meta:
+        db_table = 'tournaments'
 
 
 class ProgrammingTournaments(models.Model):
@@ -186,6 +233,8 @@ class ProgrammingTournaments(models.Model):
     def __str__(self):
         return f"Tournament: {self.tournament.name_tournament} - Date: {self.registration_date}"
 
+    class Meta:
+        db_table = 'programmingTournaments'
 
 class Services(models.Model):
     service_name = models.CharField(max_length=40)
@@ -197,6 +246,9 @@ class Services(models.Model):
 
     def __str__(self):
         return self.service_name
+    
+    class Meta:
+        db_table = 'services'
 
 
 class ReceiptPayment(models.Model):
@@ -208,6 +260,8 @@ class ReceiptPayment(models.Model):
     def __str__(self):
         return f"Athlete: {self.r_athlete.people.name} - Service: {self.r_service.service_name}"
 
+    class Meta:
+        db_table = 'receiptPayment'
 
 class Anthropometric(models.Model):
     athlete = models.ForeignKey(Athlete, on_delete=models.CASCADE)
@@ -230,4 +284,5 @@ class Anthropometric(models.Model):
     def __str__(self):
         return f"Athlete: {self.athlete.people.name} - Control Date: {self.controlDate}"
 
-
+    class Meta:
+        db_table = 'anthropometric'

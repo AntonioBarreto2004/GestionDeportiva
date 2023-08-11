@@ -1,11 +1,9 @@
-from datetime import datetime
 import re
-import requests
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
-from ..models import Sports
-from ..serializers import SportsSerializer
+from ..models import *
+from ..serializers import *
 
 @api_view(['GET'])
 def list_sports(request):
@@ -41,14 +39,6 @@ def list_sports(request):
             'data': serializer.data
         }
         return Response(response_data)
-    except requests.exceptions.ConnectionError:
-        data = {
-            'code': status.HTTP_400_BAD_REQUEST,
-            'status': False,
-            'message': 'La URL se ha perdido. Por favor, inténtalo más tarde.',
-            'data': None
-        }
-        return Response(data)
     except Exception as e:
         data = {
             'code': status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -59,64 +49,82 @@ def list_sports(request):
         return Response(data)
 
     
-@api_view(['POST'])  
+@api_view(['POST'])
 def create_sports(request):
-        serializer = SportsSerializer(data=request.data)
-        if serializer.is_valid():
-            sport_name = serializer.validated_data['sport_name']
-            description = serializer.validated_data['description']
+    serializer = SportsSerializer(data=request.data)
+    if serializer.is_valid():
+        sport_name = serializer.validated_data['sport_name']
+        description = serializer.validated_data['description']
+        category_ids = request.data.get('category_ids', [])
 
-            # Validating the name field
-            if not sport_name:
-                return Response({
-                    'code': status.HTTP_200_OK,
-                    'message': 'Nombre del deporte no puede estar vacío.',
-                    'status': False,
-                    'data': None
-                })
+        # Validating the name field
+        if not sport_name:
+            return Response({
+                'code': status.HTTP_200_OK,
+                'message': 'Nombre del deporte no puede estar vacío.',
+                'status': False,
+                'data': None
+            })
 
-            if not re.match(r'^[a-zA-Z\s]+$', sport_name):
-                return Response({
-                    'code': status.HTTP_200_OK,
-                    'message': 'Nombre del deporte solo puede contener letras y espacios.',
-                    'status': False,
-                    'data': None
-                })
+        if not re.match(r'^[a-zA-Z\s]+$', sport_name):
+            return Response({
+                'code': status.HTTP_200_OK,
+                'message': 'Nombre del deporte solo puede contener letras y espacios.',
+                'status': False,
+                'data': None
+            })
 
-            # Validating the description field
-            if len(description) > 200:
-                return Response({
-                    'code': status.HTTP_200_OK,
-                    'message': 'La descripción no puede exceder los 200 caracteres.',
-                    'status': False,
-                    'data': None
-                })
+        # Validating the description field
+        if len(description) > 200:
+            return Response({
+                'code': status.HTTP_200_OK,
+                'message': 'La descripción no puede exceder los 200 caracteres.',
+                'status': False,
+                'data': None
+            })
 
-            # Validating duplicate sports
-            if Sports.objects.filter(sport_name=sport_name).exists():
-                return Response({
-                    'code': status.HTTP_200_OK,
-                    'message': 'El deporte ya existe en la base de datos.',
-                    'status': False,
-                    'data': None
-                })
+        # Validating duplicate sports
+        if Sports.objects.filter(sport_name=sport_name).exists():
+            return Response({
+                'code': status.HTTP_200_OK,
+                'message': 'El deporte ya existe en la base de datos.',
+                'status': False,
+                'data': None
+            })
 
-            # Save the sports object
-            serializer.save()
+        # Save the sports object
+        sport = serializer.save()
+
+        # Associate the sport with categories if category_ids are provided
+        if category_ids:
+            associated_categories = []
+            for category_id in category_ids:
+                try:
+                    category = Category.objects.get(pk=category_id)
+                    CategorySport.objects.get_or_create(category_id=category, sport_id=sport)
+                    associated_categories.append(category.category_name)
+                except Category.DoesNotExist:
+                    pass
 
             return Response({
                 'code': status.HTTP_201_CREATED,
                 'message': 'Deporte creado exitosamente',
                 'status': True,
-                'data': None
+                'associated_categories': f'categorias asociadas {associated_categories}'
             })
-
+        else:
+            return Response({
+                'code': status.HTTP_201_CREATED,
+                'message': 'Deporte creado exitosamente',
+                'status': True,
+                'associated_categories': 'No se han asociado categorías'
+            })
+    else:
         return Response({
             'code': status.HTTP_200_OK,
-            'message': 'Datos inválidos',
-            'status': False,
-            'errors': serializer.errors,
-            'data': None
+            'message': 'Error al crear el deporte',
+            'status': True,
+            'data': serializer.errors
         })
     
 @api_view(['PATCH'])
