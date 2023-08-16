@@ -12,7 +12,7 @@ def list_sports(request):
         sport_name = request.GET.get('sport_name')
         creation_date = request.GET.get('creation_date')
 
-        queryset = Sports.objects.all()
+        queryset = Sports.objects.all().order_by('id')
 
         if id:
             queryset = queryset.filter(id=id)
@@ -31,12 +31,31 @@ def list_sports(request):
                 }
             )
 
-        serializer = SportsSerializer(queryset, many=True)
+        sports_data = []
+        for sport in queryset:
+            categories = Category.objects.filter(categorysport__sport_id=sport.id)
+            category_data = [
+                {
+                    'id': category.id,
+                    'category_name': category.category_name,
+                    'description': category.description
+                }
+                for category in categories
+            ]
+
+            sport_data = {
+                'id': sport.id,
+                'sport_name': sport.sport_name,
+                'description': sport.description,
+                'categories': category_data
+            }
+            sports_data.append(sport_data)
+
         response_data = {
             'code': status.HTTP_200_OK,
             'status': True,
             'message': 'Datos Encontrados',
-            'data': serializer.data
+            'data': sports_data
         }
         return Response(response_data)
     except Exception as e:
@@ -48,6 +67,9 @@ def list_sports(request):
         }
         return Response(data)
 
+
+
+
     
 @api_view(['POST'])
 def create_sports(request):
@@ -55,21 +77,13 @@ def create_sports(request):
     if serializer.is_valid():
         sport_name = serializer.validated_data['sport_name']
         description = serializer.validated_data['description']
-        category_ids = request.data.get('category_ids', [])
+        category_ids = [category['id'] for category in request.data.get('category_ids', [])]
 
         # Validating the name field
         if not sport_name:
             return Response({
                 'code': status.HTTP_200_OK,
                 'message': 'Nombre del deporte no puede estar vacío.',
-                'status': False,
-                'data': None
-            })
-
-        if not re.match(r'^[a-zA-Z\s]+$', sport_name):
-            return Response({
-                'code': status.HTTP_200_OK,
-                'message': 'Nombre del deporte solo puede contener letras y espacios.',
                 'status': False,
                 'data': None
             })
@@ -139,10 +153,12 @@ def update_sport(request, pk):
                 'message': 'El deporte no existe',
                 'data': None
             })
+
     # Obtener los campos de la solicitud
     sport_name = request.data.get('sport_name')
     description = request.data.get('description')
-    
+    category_ids = request.data.get('category_ids', [])
+
     campos_faltantes = []
     # Verificar si los campos están vacíos
     if not sport_name:
@@ -159,7 +175,7 @@ def update_sport(request, pk):
             })
 
     # Verificar si el deporte ya existe con el mismo nombre
-    existing_sport = Sports.objects.filter(sport_name=sport_name).first()
+    existing_sport = Sports.objects.filter(sport_name=sport_name).exclude(pk=pk).first()
     if existing_sport:
         return Response(
             data={
@@ -169,18 +185,26 @@ def update_sport(request, pk):
                 'data': None
             })
 
-    serializer = SportsSerializer(sport, data=request.data, partial=True)
-    serializer.is_valid(raise_exception=True)
-    serializer.save()
+    # Actualizar los campos del deporte
+    sport.sport_name = sport_name
+    sport.description = description
+    sport.save()
+
+    # Eliminar relaciones con categorías existentes
+    sport.categorysport_set.filter(category_id__in=[item['id'] for item in category_ids]).delete()
+
+    # Agregar nuevas relaciones con categorías
+    for category_id in category_ids:
+        category = Category.objects.get(pk=category_id['id'])
+        CategorySport.objects.create(category_id=category, sport_id=sport)
 
     responde_data = {
         'code': status.HTTP_200_OK,
-        'message': 'Deporte actualizada exitosamente',
+        'message': 'Deporte actualizado exitosamente',
         'status': True,
         'data': None
     }
     return Response(responde_data)
-
 
 
 @api_view(['DELETE'])

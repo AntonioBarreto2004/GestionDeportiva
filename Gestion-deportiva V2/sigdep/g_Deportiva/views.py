@@ -1,7 +1,7 @@
 import pytz
-from django.shortcuts import render
 from rest_framework import status
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
 from django.contrib.auth.hashers import check_password
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.response import Response
@@ -47,7 +47,7 @@ def custom_login(request):
         # Obtener el rol del usuario
         rol = user.rol
 
-        if rol.name_rol in ['Administrador', 'Instructor', 'Atleta']:
+        if rol.name in ['Administrador', 'Instructor', 'Atleta']:
             # Generar los tokens de acceso y de actualización
             refresh = RefreshToken.for_user(user)
             access_token = refresh.access_token
@@ -56,7 +56,7 @@ def custom_login(request):
                 'code': status.HTTP_200_OK,
                 'access_token': str(access_token),
                 'refresh_token': str(refresh),
-                'message': f'Inicio de sesión exitoso con el Rol {rol.name_rol}',
+                'message': f'Inicio de sesión exitoso con el Rol {rol.name}',
                 'status': True
             })
 
@@ -65,8 +65,50 @@ def custom_login(request):
         'code': status.HTTP_200_OK,
         'message': 'Credenciales inválidas, usuario no autenticado o rol no permitido',
         'status': False
-        }
-    )
+    })
+
+# @api_view(['POST'])
+# @permission_classes([IsAuthenticated])
+# def custom_logout(request):
+#     refresh_token = request.data.get('refresh_token')
+
+#     if not refresh_token:
+#         return Response({
+#             'code': status.HTTP_400_BAD_REQUEST,
+#             'message': 'Se requiere el token de actualización para cerrar sesión',
+#             'status': False
+#         })
+
+#     try:
+#         refresh_token_obj = RefreshToken(refresh_token)
+#         refresh_token_obj.blacklist()
+
+#         # Asegurarse de que el token de actualización sea válido
+#         if not refresh_token_obj.check_token(refresh_token):
+#             return Response({
+#                 'code': status.HTTP_400_BAD_REQUEST,
+#                 'message': 'El token de actualización proporcionado no es válido',
+#                 'status': False
+#             })
+
+#         # Eliminar el token de acceso del usuario actual
+#         user = request.user
+#         user.auth_token.delete()
+
+#         return Response({
+#             'code': status.HTTP_200_OK,
+#             'message': 'Cierre de sesión exitoso',
+#             'status': True
+#         })
+#     except Exception as e:
+#         return Response({
+#             'code': status.HTTP_500_INTERNAL_SERVER_ERROR,
+#             'message': 'Error al intentar cerrar sesión',
+#             'status': False
+#         })
+
+
+
 
 
 #Actualizar fecha de cambios en los datos del usuario.
@@ -81,7 +123,7 @@ def profile_pre_save(sender, instance, **kwargs):
             or original_instance.photo_user != instance.photo_user
             or original_instance.birthdate != instance.birthdate
             or original_instance.telephone_number != instance.telephone_number
-            or original_instance.type_document_id != instance.type_document_id
+            or original_instance.type_document != instance.type_document
         ):
             colombia_timezone = pytz.timezone('America/Bogota')
             # Obtener la fecha y hora actual en la zona horaria de Colombia

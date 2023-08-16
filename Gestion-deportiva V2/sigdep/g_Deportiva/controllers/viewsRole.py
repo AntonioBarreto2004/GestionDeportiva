@@ -33,7 +33,7 @@ def create_role(request):
     validated_data = serializerR.validated_data
 
     # Realizar verificación adicional para evitar datos duplicados
-    if Rol.objects.filter(name_rol=validated_data['name_rol']).exists():
+    if Rol.objects.filter(name=validated_data['name']).exists():
         return Response(data={'code': status.HTTP_200_OK, 
                               'message': 'Los datos ya existen', 
                               'status': False})
@@ -53,9 +53,9 @@ def update_role(request, pk):
                               'message': 'Rol no existe',  
                               'status':False})
     
-    name_rol = request.data.get('name_rol')
+    name = request.data.get('name')
 
-    existing_sport = Rol.objects.filter(name_rol=name_rol).first()
+    existing_sport = Rol.objects.filter(name=name).first()
     if existing_sport:
         return Response(
             data={

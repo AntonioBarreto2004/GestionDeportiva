@@ -21,7 +21,7 @@ def list_athlete(request):
     for athlete in athletes:
         try:
             user = User.objects.get(people=athlete.people)
-            rol_name = user.rol.name_rol if user and user.rol else None
+            rol_name = user.rol.name if user and user.rol else None
         except User.DoesNotExist:
             rol_name = None
 
@@ -33,7 +33,7 @@ def list_athlete(request):
             allergies_data = [
                 {
                     'id': allergy.allergies.id,
-                    'allergie_name': allergy.allergies.allergie_name,
+                    'name': allergy.allergies.name,
                     'description': allergy.allergies.description
                 }
                 for allergy in athlete.people.peopleallergies_set.all()
@@ -43,7 +43,7 @@ def list_athlete(request):
             disabilities_data = [
                 {
                     'id': disability.disabilities.id,
-                    'disability_name': disability.disabilities.disability_name,
+                    'name': disability.disabilities.name,
                     'description': disability.disabilities.description
                 }
                 for disability in athlete.people.peopledisabilities_set.all()
@@ -52,9 +52,9 @@ def list_athlete(request):
         if athlete.people.peoplespecialconditions_set.exists():
             special_conditions_data = [
                 {
-                    'id': condition.specialConditions.id,
-                    'specialConditions_name': condition.specialConditions.specialConditions_name,
-                    'description': condition.specialConditions.description
+                    'id': condition.specialconditions.id,
+                    'name': condition.specialconditions.name,
+                    'description': condition.specialconditions.description
                 }
                 for condition in athlete.people.peoplespecialconditions_set.all()
             ]
@@ -68,8 +68,8 @@ def list_athlete(request):
             'rol': rol_name,
             'email': athlete.people.email,
             'instructor': f"{athlete.instructor.people.name} {athlete.instructor.people.last_name}" if athlete.instructor else None,
-            'sport': athlete.sports.sport_name,
-            'photo_user': athlete.people.photo_user.url if athlete.people.photo_user else None,
+            'sport': athlete.sports.name,
+            'photo_user': athlete.people.photo_user,
             'birthdate': athlete.people.birthdate,
             'age': age,
             'gender': athlete.people.gender,
@@ -79,9 +79,9 @@ def list_athlete(request):
             'technicalv': athlete.technicalv,
             'tacticalv': athlete.tacticalv,
             'physicalv': athlete.physicalv,
-            'file_documentidentity': athlete.people.file_documentidentity.url if athlete.people.file_documentidentity else None,
-            'file_EPS_certificate': athlete.people.file_EPS_certificate.url if athlete.people.file_EPS_certificate else None,
-            'file_informed_consent': athlete.people.file_informed_consent.url if athlete.people.file_informed_consent else None,
+            'file_documentidentity': athlete.people.file_documentidentity,
+            'file_eps_certificate': athlete.people.file_eps_certificate,
+            'file_informed_consent': athlete.people.file_informed_consent,
             'allergies': allergies_data,
             'disabilities': disabilities_data,
             'special_conditions': special_conditions_data,
@@ -177,7 +177,7 @@ def create_athlete(request):
             return Response(
                 data={
                     'code': status.HTTP_200_OK,
-                    'message': 'Ya existe un usuario con este correo registrado',
+                    'message': 'Ya existe una persona con este correo registrado',
                     'status': True,
                     'data': None
                 })
@@ -235,6 +235,7 @@ def create_athlete(request):
         if people_serializer.is_valid():
             person = people_serializer.save()
         else:
+            person.delete()
             response_data = {
                 'data': status.HTTP_200_OK,
                 'status': True,
@@ -242,42 +243,18 @@ def create_athlete(request):
                 'data': None
             }
             return Response(response_data)
-        # Obtener el instructor por su ID
-        try:
-            instructor = Instructors.objects.get(pk=instructor_id)
-        except Instructors.DoesNotExist:
-            return Response(
-                data={
-                    'code': status.HTTP_200_OK,
-                    'message': f'El instructor con ID "{instructor_id}" no existe.',
-                    'status': True,
-                    'data': None
-                })
-        # Obtener o crear la instancia de Sports
-        try:
-            sports_instance = Sports.objects.get(pk=sport_id)
-        except Sports.DoesNotExist:
-            return Response(
-                data={
-                    'code': status.HTTP_200_OK,
-                    'message': f'El deporte con ID "{sport_id}" no existe.',
-                    'status': True,
-                    'data': None
-                })
         
         # Crear el atleta
         Athlete.objects.create(
             people=person,
-            instructor=instructor,
-            technicalv=technicalv,
-            tacticalv=tacticalv,
-            physicalv=physicalv,
-            sports=sports_instance
+            technical=person_data.get('technical'),
+            tactical=person_data.get('tactical'),
+            physical=person_data.get('physical'),
         )
 
         # Buscar el rol "Atleta" en la base de datos y asignarlo al usuario
         try:
-            athlete_role = Rol.objects.get(name_rol='Atleta')
+            athlete_role = Rol.objects.get(name='Atleta')
         except Rol.DoesNotExist:
             return Response(
                 data={
@@ -292,7 +269,7 @@ def create_athlete(request):
   # Generar contraseña basada en el número de documento
 
         # Crear el usuario y asignar el rol de Atleta
-        user = User.objects.create(
+        User.objects.create(
             people=person,
             rol=athlete_role,
             password=make_password(generated_password),  # Aplicar el hash a la contraseña
@@ -304,7 +281,7 @@ def create_athlete(request):
             allergies_ids = [allergy['id'] for allergy in person_data['allergies']]
             allergies_associated = Allergies.objects.filter(id__in=allergies_ids)
             for allergy in allergies_associated:
-                peopleAllergies.objects.create(people=person, allergies=allergy)
+                peopleallergies.objects.create(people=person, allergies=allergy)
 
         if 'disabilities' in person_data:
             disabilities_ids = [disability['id'] for disability in person_data['disabilities']]
@@ -314,9 +291,9 @@ def create_athlete(request):
 
         if 'special_conditions' in person_data:
             special_conditions_ids = [condition['id'] for condition in person_data['special_conditions']]
-            special_conditions_associated = specialConditions.objects.filter(id__in=special_conditions_ids)
+            special_conditions_associated = specialconditions.objects.filter(id__in=special_conditions_ids)
             for condition in special_conditions_associated:
-                peoplespecialConditions.objects.create(people=person, specialConditions=condition)
+                peoplespecialConditions.objects.create(people=person, specialconditions=condition)
 
         # Manejar las relaciones muchos a muchos (allergies, disabilities, special_conditions)
         send_activation_email(person.name, person.email, generated_password)
@@ -368,6 +345,25 @@ def update_athlete(request, pk):
             }
             return Response(response_data)
         
+        # Manejar campos de archivo si se proporcionan en la solicitud
+        if 'photo_user' in request.FILES:
+            athlete.people.photo_user = request.FILES['photo_user']
+        else:
+            athlete.people.photo_user = None
+        if 'file_documentidentity' in request.FILES:
+            athlete.people.file_documentidentity = request.FILES['file_documentidentity']
+        else:
+            athlete.people.file_documentidentity = None
+        if 'file_EPS_certificate' in request.FILES:
+            athlete.people.file_eps_certificate = request.FILES['file_eps_certificate']
+        else:
+            athlete.people.file_eps_certificate = None
+        if 'file_informed_consent' in request.FILES:
+            athlete.people.file_informed_consent = request.FILES['file_informed_consent']
+        else:
+            athlete.people.file_informed_consent = None
+        # ... manejar otros campos de archivo ...
+        
         technicalv = request.data.get('technicalv')
         tacticalv = request.data.get('tacticalv')
         physicalv = request.data.get('physicalv')
@@ -399,7 +395,7 @@ def update_athlete(request, pk):
                 athlete.instructor = instructor
             except Instructors.DoesNotExist:
                 return Response(data={
-                    'code': status.HTTP_400_BAD_REQUEST,
+                    'code': status.HTTP_200_OK,
                     'message': f'Instructor con ID {instructor_id} no encontrado.',
                     'status': False,
                     'data': None,
@@ -413,7 +409,7 @@ def update_athlete(request, pk):
                 athlete.sports = sports_instance
             except Sports.DoesNotExist:
                 return Response(data={
-                    'code': status.HTTP_400_BAD_REQUEST,
+                    'code': status.HTTP_200_OK,
                     'message': f'Deporte con ID {sport_id} no encontrado.',
                     'status': False,
                     'data': None,
@@ -425,46 +421,49 @@ def update_athlete(request, pk):
         special_conditions = request.data.get('special_conditions', [])
 
         with transaction.atomic():  # Utilizar una transacción para las operaciones de relación
-            if allergies is not None:
+            if allergies:  # Verificar si hay alergias para actualizar
                 athlete.people.peopleallergies_set.all().delete()
-                for allergy_id in allergies:
+                for allergy_data in allergies:
+                    allergy_id = allergy_data.get('id')
                     try:
                         allergy = Allergies.objects.get(id=allergy_id)
-                        peopleAllergies.objects.create(people=athlete.people, allergies=allergy)
+                        peopleallergies.objects.create(people=athlete.people, allergies=allergy)
                     except Allergies.DoesNotExist:
                         return Response(
                             data={
-                                'code': status.HTTP_400_BAD_REQUEST,
+                                'code': status.HTTP_200_OK,
                                 'status': False,
                                 'message': f'Alergia con ID {allergy_id} no encontrada.',
                                 'data': None
                             })
 
-            if disabilities is not None:
+            if disabilities:  # Verificar si hay discapacidades para actualizar
                 athlete.people.peopledisabilities_set.all().delete()
-                for disability_id in disabilities:
+                for disability_data in disabilities:
+                    disability_id = disability_data.get('id')
                     try:
                         disability = Disabilities.objects.get(id=disability_id)
                         peopleDisabilities.objects.create(people=athlete.people, disabilities=disability)
                     except Disabilities.DoesNotExist:
                         return Response(
                             data={
-                                'code': status.HTTP_400_BAD_REQUEST,
+                                'code': status.HTTP_200_OK,
                                 'status': False,
                                 'message': f'Discapacidad con ID {disability_id} no encontrada.',
                                 'data': None
                             })
 
-            if special_conditions is not None:
+            if special_conditions:  # Verificar si hay condiciones especiales para actualizar
                 athlete.people.peoplespecialconditions_set.all().delete()
-                for condition_id in special_conditions:
+                for condition_data in special_conditions:
+                    condition_id = condition_data.get('id')
                     try:
-                        condition = specialConditions.objects.get(id=condition_id)
-                        peoplespecialConditions.objects.create(people=athlete.people, specialConditions=condition)
-                    except specialConditions.DoesNotExist:
+                        condition = specialconditions.objects.get(id=condition_id)
+                        peoplespecialConditions.objects.create(people=athlete.people, specialconditions=condition)
+                    except specialconditions.DoesNotExist:
                         return Response(
                             data={
-                                'code': status.HTTP_400_BAD_REQUEST,
+                                'code': status.HTTP_200_OK,
                                 'status': False,
                                 'message': f'Condición especial con ID {condition_id} no encontrada.',
                                 'data': None

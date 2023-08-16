@@ -132,7 +132,7 @@ def create_team(request):
         # Verificar si el usuario existe y tiene el rol de "Instructor" o "Administrador"
         user = request.user
         try:
-            if not user.cod_rol.name_rol in ['Instructor', 'Administrador']:
+            if not user.cod_rol.name in ['Instructor', 'Administrador']:
                 response_data = {
                     'code': status.HTTP_200_OK,
                     'message': 'No tienes permisos para crear un equipo.',

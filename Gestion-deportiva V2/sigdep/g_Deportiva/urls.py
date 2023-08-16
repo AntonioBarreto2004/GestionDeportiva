@@ -55,6 +55,7 @@ urlpatterns = [
     path('delete-instructor/<int:pk>/', viewsInstructor.delete_instructor, name='Delete instructors'),
 
     path('list-anthrop/', viewsAnthropometric.list_anthro, name='List Anthropometric'),
+    path('list-anthrop-filters/', viewsAnthropometric.list_anthro_filters, name='List Anthropometric'),
     path('create-anthrop/', viewsAnthropometric.create_anthro, name='Create Anthropometric'),
     path('update-anthrop/<int:pk>/', viewsAnthropometric.update_anthro, name='Update Anthropometric'),
     path('dalete-anthrop/<int:pk>/', viewsAnthropometric.delete_anthro, name='Delete Anthropometric'),
@@ -80,6 +81,7 @@ urlpatterns = [
     path('special-conditions-delete/<int:pk>/', viewsSpecial_conditions.delete_special_condition, name='delete_special_condition'),
 
     path('login/', views.custom_login, name='Login'),
+    # path('logout/', views.custom_logout, name='logout'),
     path('reset-password/', viewsRestPassword.reset_password, name='reset_Password'),
     path('reset-confirm/<str:uidb64>/<str:token>/', viewsRestPassword.reset_password_confirm, name='reset_password_confirm'),
     

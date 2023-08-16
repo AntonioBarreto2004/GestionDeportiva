@@ -20,7 +20,7 @@ def list_instructors(request):
     for instructor in instructors:
         try:
             user = User.objects.get(people=instructor.people)
-            rol_name = user.rol.name_rol if user and user.rol else None
+            rol_name = user.rol.name if user and user.rol else None
         except User.DoesNotExist:
             rol_name = None
 
@@ -32,7 +32,7 @@ def list_instructors(request):
             allergies_data = [
                 {
                     'id': allergy.allergies.id,
-                    'allergie_name': allergy.allergies.allergie_name,
+                    'allergie_name': allergy.allergies.name,
                     'description': allergy.allergies.description
                 }
                 for allergy in instructor.people.peopleallergies_set.all()
@@ -42,7 +42,7 @@ def list_instructors(request):
             disabilities_data = [
                 {
                     'id': disability.disabilities.id,
-                    'disability_name': disability.disabilities.disability_name,
+                    'disability_name': disability.disabilities.name,
                     'description': disability.disabilities.description
                 }
                 for disability in instructor.people.peopledisabilities_set.all()
@@ -51,9 +51,9 @@ def list_instructors(request):
         if instructor.people.peoplespecialconditions_set.exists():
             special_conditions_data = [
                 {
-                    'id': condition.specialConditions.id,
-                    'specialConditions_name': condition.specialConditions.specialConditions_name,
-                    'description': condition.specialConditions.description
+                    'id': condition.specialconditions.id,
+                    'name': condition.specialconditions.name,
+                    'description': condition.specialconditions.description
                 }
                 for condition in instructor.people.peoplespecialconditions_set.all()
             ]
@@ -66,8 +66,7 @@ def list_instructors(request):
             'name': f"{instructor.people.name} {instructor.people.last_name}",
             'rol': rol_name,
             'email': instructor.people.email,
-            'photo_user': instructor.people.photo_user.url if instructor.people.photo_user else None,
-            'birthdate': instructor.people.birthdate,
+            'photo_user': instructor.people.photo_user,
             'age': age,
             'gender': instructor.people.gender,
             'telephone_number': instructor.people.telephone_number,
@@ -75,9 +74,9 @@ def list_instructors(request):
             'num_document': instructor.people.num_document,
             'specialization': instructor.specialization,
             'experience_years': instructor.experience_years,
-            'file_documentidentity': instructor.people.file_documentidentity.url if instructor.people.file_documentidentity else None,
-            'file_EPS_certificate': instructor.people.file_EPS_certificate.url if instructor.people.file_EPS_certificate else None,
-            'file_informed_consent': instructor.people.file_informed_consent.url if instructor.people.file_informed_consent else None,
+            'file_documentidentity': instructor.people.file_documentidentity,
+            'file_eps_certificate': instructor.people.file_eps_certificate,
+            'file_informed_consent': instructor.people.file_informed_consent,
             'allergies': allergies_data,
             'disabilities': disabilities_data,
             'special_conditions': special_conditions_data,
@@ -90,7 +89,7 @@ def list_instructors(request):
             'code': status.HTTP_200_OK,
             'status': True,
             'message': 'No se encuentran Datos',
-            'data': []
+            'data': None
         }
     else:
         response_data = {
@@ -118,8 +117,8 @@ def create_instructor(request):
         with transaction.atomic():
             # Obtener los datos del cuerpo de la solicitud
             person_data = request.data.get('people')
-            specialization = request.data.get('specialization')
-            experience_years = request.data.get('experience_years')
+            specialization = person_data.get('specialization')
+            experience_years = person_data.get('experience_years')
             email = person_data['email']
 
             # Validar que specialization y experience_years no estén vacíos y experience_years sea un valor numérico
@@ -223,6 +222,7 @@ def create_instructor(request):
             if people_serializer.is_valid():
                 person = people_serializer.save()
             else:
+                person.delete()
                 return Response(people_serializer.errors)
 
             # Verificar si ya existe un instructor con la misma persona asociada
@@ -237,13 +237,13 @@ def create_instructor(request):
             # Crear el instructor
             instructor = Instructors.objects.create(
                 people=person,
-                specialization=specialization,
-                experience_years=experience_years
+                specialization=person_data.get('specialization'),
+                experience_years=person_data.get('experience_years')
             )
 
             # Buscar el rol "Instructor" en la base de datos y asignarlo al usuario
             try:
-                instructor_role = Rol.objects.get(name_rol='Instructor')
+                instructor_role = Rol.objects.get(name='Instructor')
             except Rol.DoesNotExist:
                 return Response(
                     data={
@@ -270,7 +270,7 @@ def create_instructor(request):
                 allergies_ids = [allergy['id'] for allergy in person_data['allergies']]
                 allergies_associated = Allergies.objects.filter(id__in=allergies_ids)
                 for allergy in allergies_associated:
-                    peopleAllergies.objects.create(people=person, allergies=allergy)
+                    peopleallergies.objects.create(people=person, allergies=allergy)
 
             if 'disabilities' in person_data:
                 disabilities_ids = [disability['id'] for disability in person_data['disabilities']]
@@ -280,7 +280,7 @@ def create_instructor(request):
 
             if 'special_conditions' in person_data:
                 special_conditions_ids = [condition['id'] for condition in person_data['special_conditions']]
-                special_conditions_associated = specialConditions.objects.filter(id__in=special_conditions_ids)
+                special_conditions_associated = specialconditions.objects.filter(id__in=special_conditions_ids)
                 for condition in special_conditions_associated:
                     peoplespecialConditions.objects.create(people=person, specialConditions=condition)
 
@@ -313,30 +313,60 @@ def update_instructor(request, pk):
         # Obtener el instructor por su ID
         instructor = Instructors.objects.get(pk=pk)
 
-        people_data = request.data.get('people')
+        people_data = request.data.get('people', {})
+        allergies = request.data.get('allergies', [])
+        disabilities = request.data.get('disabilities', [])
+        special_conditions = request.data.get('special_conditions', [])
+
+        # Actualizar datos de People
         if people_data:
-            serializerPd = PeopleSerializer(instructor.people, data=people_data, partial=True)
-            serializerPd.is_valid(raise_exception=True)
-            serializerPd.save()  # Actualiza los datos de People
+            if 'name' in people_data:
+                name = people_data['name']
+                if not re.match(r'^[a-zA-Z\s]+$', name):
+                    response_data = {
+                        'code': status.HTTP_200_OK,
+                        'message': 'Nombre de la persona solo puede contener letras y espacios.',
+                        'status': False
+                    }
+                    return Response(response_data)
+                instructor.people.name = name
 
-        name = people_data.get('name') if people_data else None
-        last_name = people_data.get('last_name') if people_data else None
+            if 'last_name' in people_data:
+                last_name = people_data['last_name']
+                if not re.match(r'^[a-zA-Z\s]+$', last_name):
+                    response_data = {
+                        'code': status.HTTP_200_OK,
+                        'message': 'Apellido de la persona solo puede contener letras y espacios.',
+                        'status': False
+                    }
+                    return Response(response_data)
+                instructor.people.last_name = last_name
 
-        if name and not re.match(r'^[a-zA-Z\s]+$', name):
-            response_data = {
-                'code': status.HTTP_200_OK,
-                'message': 'Nombre de la persona solo puede contener letras y espacios.',
-                'status': True
-            }
-            return Response(response_data)
+            # ... actualizar otros campos de People ...
 
-        if last_name and not re.match(r'^[a-zA-Z\s]+$', last_name):
-            response_data = {
-                'code': status.HTTP_200_OK,
-                'message': 'Apellido de la persona solo puede contener letras y espacios.',
-                'status': True
-            }
-            return Response(response_data)
+            instructor.people.save()  # Guardar cambios en People
+
+        # Manejar campos de archivo si se proporcionan en la solicitud
+        if 'photo_user' in request.FILES:
+            instructor.people.photo_user = request.FILES['photo_user']
+        else:
+            instructor.people.photo_user = None
+        if 'file_documentidentity' in request.FILES:
+            instructor.people.file_documentidentity = request.FILES['file_documentidentity']
+        else:
+            instructor.people.file_documentidentity = None
+        if 'file_EPS_certificate' in request.FILES:
+            instructor.people.file_eps_certificate = request.FILES['file_eps_certificate']
+        else:
+            instructor.people.file_eps_certificate = None
+        if 'file_informed_consent' in request.FILES:
+            instructor.people.file_informed_consent = request.FILES['file_informed_consent']
+        else:
+            instructor.people.file_informed_consent = None
+        # ... manejar otros campos de archivo ...
+
+        # Guardar cambios en People
+        instructor.people.save()
 
         # Obtener los datos a actualizar del cuerpo de la solicitud
         specialization = request.data.get('specialization')
@@ -349,52 +379,56 @@ def update_instructor(request, pk):
             instructor.experience_years = experience_years
 
         # Resto del código para manejar las relaciones muchos a muchos
-        allergies = people_data.get('allergies', [])
-        disabilities = people_data.get('disabilities', [])
-        special_conditions = people_data.get('special_conditions', [])
+        
 
         with transaction.atomic():
-            instructor.people.peopleallergies_set.all().delete()
-            for allergy_id in allergies:
-                try:
-                    allergy = Allergies.objects.get(id=allergy_id)
-                    peopleAllergies.objects.create(people=instructor.people, allergies=allergy)
-                except Allergies.DoesNotExist:
-                    return Response(
-                        data={
-                            'code': status.HTTP_200_OK,
-                            'status': True,
-                            'message': f'Alergia con ID {allergy_id} no encontrada.',
-                            'data': None
-                        })
+            if allergies:  # Verificar si hay alergias para actualizar
+                instructor.people.peopleallergies_set.all().delete()
+                for allergy_data in allergies:
+                    allergy_id = allergy_data.get('id')
+                    try:
+                        allergy = Allergies.objects.get(id=allergy_id)
+                        peopleallergies.objects.create(people=instructor.people, allergies=allergy)
+                    except Allergies.DoesNotExist:
+                        return Response(
+                            data={
+                                'code': status.HTTP_200_OK,
+                                'status': False,
+                                'message': f'Alergia con ID {allergy_id} no encontrada.',
+                                'data': None
+                            })
 
-            instructor.people.peopledisabilities_set.all().delete()
-            for disability_id in disabilities:
-                try:
-                    disability = Disabilities.objects.get(id=disability_id)
-                    peopleDisabilities.objects.create(people=instructor.people, disabilities=disability)
-                except Disabilities.DoesNotExist:
-                    return Response(
-                        data={
-                            'code': status.HTTP_200_OK,
-                            'status': True,
-                            'message': f'Discapacidad con ID {disability_id} no encontrada.',
-                            'data': None
-                        })
+            if disabilities:  # Verificar si hay discapacidades para actualizar
+                instructor.people.peopledisabilities_set.all().delete()
+                for disability_data in disabilities:
+                    disability_id = disability_data.get('id')
+                    try:
+                        disability = Disabilities.objects.get(id=disability_id)
+                        peopleDisabilities.objects.create(people=instructor.people, disabilities=disability)
+                    except Disabilities.DoesNotExist:
+                        return Response(
+                            data={
+                                'code': status.HTTP_200_OK,
+                                'status': False,
+                                'message': f'Discapacidad con ID {disability_id} no encontrada.',
+                                'data': None
+                            })
 
-            instructor.people.peoplespecialconditions_set.all().delete()
-            for condition_id in special_conditions:
-                try:
-                    condition = specialConditions.objects.get(id=condition_id)
-                    peoplespecialConditions.objects.create(people=instructor.people, specialConditions=condition)
-                except specialConditions.DoesNotExist:
-                    return Response(
-                        data={
-                            'code': status.HTTP_200_OK,
-                            'status': True,
-                            'message': f'Condición especial con ID {condition_id} no encontrada.',
-                            'data': None
-                        })
+            if special_conditions:  # Verificar si hay condiciones especiales para actualizar
+                instructor.people.peoplespecialconditions_set.all().delete()
+                for condition_data in special_conditions:
+                    condition_id = condition_data.get('id')
+                    try:
+                        condition = specialconditions.objects.get(id=condition_id)
+                        peoplespecialConditions.objects.create(people=instructor.people, specialconditions=condition)
+                    except specialconditions.DoesNotExist:
+                        return Response(
+                            data={
+                                'code': status.HTTP_200_OK,
+                                'status': False,
+                                'message': f'Condición especial con ID {condition_id} no encontrada.',
+                                'data': None
+                            })
 
         # Guardar los cambios en el instructor
         instructor.save()
@@ -418,14 +452,6 @@ def update_instructor(request, pk):
                 'data': None
             })
 
-    except Exception as e:
-        data = {
-            'code': status.HTTP_500_INTERNAL_SERVER_ERROR,
-            'status': False,
-            'message': 'Error del servidor',
-            'data': None
-        }
-        return Response(data)
 
     
 

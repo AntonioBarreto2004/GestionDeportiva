@@ -4,42 +4,46 @@ from django.utils import timezone
 
 
 class Allergies(models.Model):
-    allergie_name = models.CharField(max_length=45)
+    name = models.CharField(max_length=45)
     description = models.TextField()
+    status = models.BooleanField(default=True)
 
     def __str__(self):
-        return self.allergie_name
+        return self.name
     
     class Meta:
         db_table = 'allergies'
 
 
 class Disabilities(models.Model):
-    disability_name = models.CharField(max_length=45)
+    name = models.CharField(max_length=45)
     description = models.TextField()
+    status = models.BooleanField(default=True)
 
     def __str__(self):
-        return self.disability_name
+        return self.name
     
     class Meta:
         db_table = 'disabilities'
     
-class specialConditions(models.Model):
-    specialConditions_name = models.CharField(max_length=45)
+class specialconditions(models.Model):
+    name = models.CharField(max_length=45)
     description = models.TextField()
+    status = models.BooleanField(default=True)
 
     def __str__(self):
-        return self.specialConditions_name
+        return self.name
     
     class Meta:
-        db_table = 'specialConditions'
+        db_table = 'specialconditions'
     
 class Rol(models.Model):
-    name_rol = models.CharField(max_length=20)
+    name = models.CharField(max_length=20)
     description = models.TextField()
+    status = models.BooleanField(default=True)
 
     def __str__(self):
-        return self.name_rol
+        return self.name
     
     class Meta:
         db_table = 'rol'
@@ -49,7 +53,7 @@ class People(models.Model):
     email = models.CharField(max_length=255)
     name = models.CharField(max_length=255)
     last_name = models.CharField(max_length=230)
-    photo_user = models.ImageField(upload_to='media/', blank=True)
+    photo_user = models.ImageField(upload_to='media/', blank=True, null=True)  # Permite que el campo sea opcional
     birthdate = models.DateField()
     gender = models.CharField(max_length=9)
     telephone_number = models.CharField(max_length=10)
@@ -57,7 +61,7 @@ class People(models.Model):
     type_document = models.CharField(max_length=20)
     num_document = models.IntegerField()
     file_documentidentity = models.FileField(upload_to='documents/', blank=True)
-    file_EPS_certificate = models.FileField(upload_to='documents/', blank=True)
+    file_eps_certificate = models.FileField(upload_to='documents/', blank=True)
     file_informed_consent = models.FileField(upload_to='documents/', blank=True)
     modified_at = models.DateTimeField(auto_now_add=True)
     
@@ -99,12 +103,12 @@ class Instructors(models.Model):
         db_table = 'instructors'
     
     
-class peopleAllergies(models.Model):
+class peopleallergies(models.Model):
     people = models.ForeignKey(People, models.DO_NOTHING)
     allergies = models.ForeignKey(Allergies, on_delete=models.CASCADE)
 
     class Meta:
-        db_table = 'peopleAllergies'
+        db_table = 'peopleallergies'
 
 
 class peopleDisabilities(models.Model):
@@ -112,36 +116,35 @@ class peopleDisabilities(models.Model):
     disabilities = models.ForeignKey(Disabilities, on_delete=models.CASCADE)
 
     class Meta:
-        db_table = 'peopleDisabilities'
+        db_table = 'peopledisabilities'
 
 class peoplespecialConditions(models.Model):
     people = models.ForeignKey(People, models.DO_NOTHING)
-    specialConditions = models.ForeignKey(specialConditions, on_delete=models.CASCADE)
+    specialconditions = models.ForeignKey(specialconditions, on_delete=models.CASCADE)
     
     class Meta:
-        db_table = 'peoplespecialConditions'
+        db_table = 'peoplespecialconditions'
 
     
 class Sports(models.Model):
-    sport_name = models.CharField(max_length=30)
+    name = models.CharField(max_length=30)
     description = models.CharField(max_length=256)
     created_at = models.DateTimeField(auto_now_add=True)
-    sport_status = models.BooleanField(default=True)
+    status = models.BooleanField(default=True)
 
     def __str__(self):
-        return self.sport_name
+        return self.name
     
     class Meta:
         db_table = 'sports'
 
 class Athlete(models.Model):
-    instructor = models.ForeignKey(Instructors, on_delete=models.SET_NULL, null=True)
     people = models.ForeignKey(People, on_delete=models.CASCADE)
-    technicalv = models.CharField(max_length=50)
-    tacticalv = models.CharField(max_length=50)
-    physicalv = models.CharField(max_length=50)
-    sports = models.ForeignKey(Sports, on_delete=models.CASCADE)
-    athlete_status = models.BooleanField(default=True)
+    technical = models.CharField(max_length=50)
+    tactical = models.CharField(max_length=50)
+    physical = models.CharField(max_length=50)
+    sports = models.ForeignKey(Sports, on_delete=models.CASCADE, blank=True, null=True)
+    status = models.BooleanField(default=True)
 
     def __str__(self):
         return f"{self.people.name} {self.people.last_name}"
@@ -149,17 +152,39 @@ class Athlete(models.Model):
     class Meta:
         db_table = 'athlete'
 
+class AthleteInstructor(models.Model):
+    athlete =  models.ForeignKey(Athlete, on_delete=models.CASCADE)
+    instructor =  models.ForeignKey(Instructors, on_delete=models.CASCADE)
+
+    class Meta:
+        db_table = 'athlete_instructor'
+
+class Specialization(models.Model):
+    name = models.CharField(max_length=100)
+    description = models.TextField(max_length=250)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'specialization'
+
+class Instructor_specialization(models.Model):
+    instructor = models.ForeignKey(Instructors, on_delete=models.CASCADE)
+    specialization = models.ForeignKey(Specialization, on_delete=models.CASCADE)
+
+    class Meta:
+        db_table = 'instructor_specialization'
+
 
 class Team(models.Model):
-    team_name = models.CharField(max_length=40)
+    name = models.CharField(max_length=40)
     sport = models.ForeignKey(Sports, on_delete=models.CASCADE)
-    team_image = models.CharField(max_length=255, blank=True, null=True)
+    image = models.CharField(max_length=255, blank=True, null=True)
     date_create_team = models.DateTimeField(auto_now_add=True)  # Field name made lowercase.
     description = models.CharField(max_length=250)
     instructors = models.ForeignKey(Instructors, on_delete=models.CASCADE)
 
     def __str__(self):
-        return self.team_name
+        return self.name
     
     class Meta:
         db_table = 'team'
@@ -179,12 +204,12 @@ class AthleteTeam(models.Model):
         db_table = 'athleteTeam'
 
 class Category(models.Model):
-    category_name = models.CharField(max_length=30)
+    name = models.CharField(max_length=30)
     description = models.TextField(max_length=250)
     date_create_category = models.DateTimeField(auto_now_add=True)  # Field name made lowercase.
 
     def __str__(self):
-        return self.category_name
+        return self.name
     
     class Meta:
         db_table = 'category'
@@ -237,15 +262,15 @@ class ProgrammingTournaments(models.Model):
         db_table = 'programmingTournaments'
 
 class Services(models.Model):
-    service_name = models.CharField(max_length=40)
-    service_status = models.IntegerField()
+    name = models.CharField(max_length=40)
+    status = models.IntegerField()
     description = models.TextField()
-    service_value = models.DecimalField(max_digits=10, decimal_places=0)
+    value = models.DecimalField(max_digits=10, decimal_places=0)
     start_date = models.DateField()
     end_date = models.DateField()
 
     def __str__(self):
-        return self.service_name
+        return self.name
     
     class Meta:
         db_table = 'services'

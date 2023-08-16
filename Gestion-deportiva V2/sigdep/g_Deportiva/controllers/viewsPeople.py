@@ -23,7 +23,7 @@ def list_users(request):
         birthdate = request.query_params.get('birthdate')
         gender = request.query_params.get('gender')
         date_create = request.query_params.get('date_create')
-        type_document_id = request.query_params.get('type_document_id')
+        type_document = request.query_params.get('type_document')
         num_document = request.query_params.get('num_document')
         rol = request.query_params.get('rol')
         # Crear un diccionario con los parámetros de consulta que se proporcionaron
@@ -40,12 +40,12 @@ def list_users(request):
             filters['gender__icontains'] = gender
         if date_create:
             filters['date_create'] = date_create
-        if type_document_id:
-            filters['type_document_id__icontains'] = type_document_id
+        if type_document:
+            filters['type_document__icontains'] = type_document
         if num_document:
             filters['num_document'] = num_document
         if rol:
-            filters['users__rol__name_rol__icontains'] = rol
+            filters['users__rol__name__icontains'] = rol
         # Obtener todos los objetos People que coincidan con los parámetros de consulta
         people = People.objects.filter(**filters).order_by('id')
         # Comprobar si hay datos
@@ -71,7 +71,7 @@ def list_users(request):
                 user = User.objects.get(people=person)
                 user_data = UserSerializer(user).data
                 person_data['users'] = user_data
-                rol_name = Rol.objects.get(id=user_data['rol']).name_rol if 'rol' in user_data else None
+                rol_name = Rol.objects.get(id=user_data['rol']).name if 'rol' in user_data else None
                 person_data['users']['rol_name'] = rol_name
             except User.DoesNotExist:
                 person_data['users'] = None
@@ -88,7 +88,7 @@ def list_users(request):
 
             # Obtener condiciones especiales asociadas
             special_conditions = person.peoplespecialconditions_set.all()
-            special_conditions_data = [specialConditionsSerializer(condition.specialConditions).data for condition in special_conditions]
+            special_conditions_data = [specialConditionsSerializer(condition.specialconditions).data for condition in special_conditions]
             person_data['special_conditions'] = special_conditions_data
 
             people_data.append(person_data)
@@ -213,7 +213,7 @@ def create_user(request):
     # Obtener el nombre del rol a partir del ID proporcionado en la solicitud
     rol_id = user_data.get('rol')
     try:
-        rol_name = Rol.objects.get(id=rol_id).name_rol
+        rol_name = Rol.objects.get(id=rol_id).name
     except Rol.DoesNotExist:
         rol_name = None
 
@@ -242,7 +242,7 @@ def create_user(request):
         allergies_ids = [allergy['id'] for allergy in people_data['allergies']]
         allergies_associated = Allergies.objects.filter(id__in=allergies_ids)
         for allergy in allergies_associated:
-            peopleAllergies.objects.create(people=people, allergies=allergy)
+            peopleallergies.objects.create(people=people, allergies=allergy)
 
     if 'disabilities' in people_data:
         disabilities_ids = [disability['id'] for disability in people_data['disabilities']]
@@ -252,7 +252,7 @@ def create_user(request):
 
     if 'special_conditions' in people_data:
         special_conditions_ids = [condition['id'] for condition in people_data['special_conditions']]
-        special_conditions_associated = specialConditions.objects.filter(id__in=special_conditions_ids)
+        special_conditions_associated = specialconditions.objects.filter(id__in=special_conditions_ids)
         for condition in special_conditions_associated:
             peoplespecialConditions.objects.create(people=people, specialConditions=condition)
 
@@ -350,7 +350,7 @@ def update_user(request, pk):
             for allergy_id in allergies:
                 try:
                     allergy = Allergies.objects.get(id=allergy_id)
-                    peopleAllergies.objects.create(people=people, allergies=allergy)
+                    peopleallergies.objects.create(people=people, allergies=allergy)
                 except Allergies.DoesNotExist:
                         return Response(
                             data={
@@ -379,9 +379,9 @@ def update_user(request, pk):
             people.peoplespecialconditions_set.all().delete()
             for condition_id in special_conditions:
                 try:
-                    condition = specialConditions.objects.get(id=condition_id)
+                    condition = specialconditions.objects.get(id=condition_id)
                     peoplespecialConditions.objects.create(people=people, specialConditions=condition)
-                except specialConditions.DoesNotExist:
+                except specialconditions.DoesNotExist:
                         return Response(
                             data={
                                 'code': status.HTTP_400_BAD_REQUEST,
@@ -429,7 +429,7 @@ def update_user(request, pk):
                   },
         )
 
-    except specialConditions.DoesNotExist:
+    except specialconditions.DoesNotExist:
         return Response(
             data={'code': status.HTTP_200_OK,
                   'message': 'Una o más condiciones especiales especificadas no existen',
